@@ -9,7 +9,13 @@ export type HrDocument = Hr & Document;
 @Schema({ timestamps: true })
 export class Hr extends Document {
   @Prop({ required: true })
-  fullName: string;
+  fName: string;
+  
+  @Prop({ required: true })
+  lName: string;
+
+  @Prop({ required: true })
+  fullName: string;  
 
   @Prop({ required: true, unique: true, lowercase: true })
   email: string;
@@ -17,7 +23,7 @@ export class Hr extends Document {
   @Prop({ required: true })
   hashedPassword: string;
 
-  @Prop()
+  @Prop( { required: true , unique: true })
   phoneNumber: string;
 
   @Prop({ required: true })
@@ -54,7 +60,7 @@ export class Hr extends Document {
   emailVerified: boolean;
 
   @Prop()
-  lastLogin: Date;
+  lastLogin: Date;  // why
 }
 
 export const HrSchema = SchemaFactory.createForClass(Hr);
