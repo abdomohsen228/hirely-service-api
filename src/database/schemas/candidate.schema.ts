@@ -16,6 +16,9 @@ export class Candidate extends Document {
   @Prop({ required: true })
   fullName: string;  
 
+  @Prop({ required: true, unique: true, lowercase: true })
+  username: string;
+  
   @Prop({ required: true, unique: true })
   email: string;
 

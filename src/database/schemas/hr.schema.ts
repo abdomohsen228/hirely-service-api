@@ -18,6 +18,9 @@ export class Hr extends Document {
   fullName: string;  
 
   @Prop({ required: true, unique: true, lowercase: true })
+  username: string;
+  
+  @Prop({ required: true, unique: true, lowercase: true })
   email: string;
 
   @Prop({ required: true })
