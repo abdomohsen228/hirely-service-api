@@ -9,7 +9,7 @@ export class InterviewTemplate extends Document {
   title: string;
 
   @Prop({ required: true })
-  role_type: string;
+  roleType: string;
 
   @Prop({ default: 0 })
   version: number;

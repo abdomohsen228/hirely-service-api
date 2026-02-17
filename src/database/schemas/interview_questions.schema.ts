@@ -17,7 +17,7 @@ export class InterviewQuestion extends Document {
   type: QuestionTypes;
 
   @Prop({ required: true })
-  answer_duration: number; // Duration in seconds
+  answerDuration: number; // Duration in seconds
 
   @Prop({ required: true })
   templateId: Types.ObjectId; 

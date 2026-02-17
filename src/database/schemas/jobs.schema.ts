@@ -14,7 +14,7 @@ export class Job extends Document {
   description: string;
 
   @Prop({ required: true })
-  companyname: string;
+  companyName: string;
 
   @Prop({ required: true })
   location: string;
