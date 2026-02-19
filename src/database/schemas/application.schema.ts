@@ -1,7 +1,6 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { ApplicationStatus } from '../enums/applicationStatus.enum';
-import App from 'next/app';
 
 export type JobApplicationDocument = JobApplication & Document;
 
@@ -16,13 +15,13 @@ export class JobApplication extends Document {
   @Prop({ required: true })
   resumeUrl: string; // URL to the candidate's resume
 
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ApplicationStatus,
     default: ApplicationStatus.APPLIED,
- })
-  status: ApplicationStatus; 
+  })
+  status: ApplicationStatus;
 
   @Prop({ default: null })
-  appliedAt: Date
+  appliedAt: Date;
 }

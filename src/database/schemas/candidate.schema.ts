@@ -2,8 +2,9 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { profileStatus } from '../enums/user-profileStatus.enum';
 import { ExperienceYears } from '../enums/experienceYears.enum';
+import { User } from './user.schema';
 
-export type CandidateDocument = Candidate & Document;
+export type CandidateDocument = Candidate & User;
 
 @Schema({ timestamps: true })
 export class Candidate extends Document {
@@ -14,27 +15,25 @@ export class Candidate extends Document {
   lName: string;
 
   @Prop({ required: true })
-  fullName: string;  
+  fullName: string;
 
   @Prop({ required: true, unique: true, lowercase: true })
   username: string;
 
   @Prop({ required: true, unique: true })
-  email: string;
-
-  @Prop({ required: true })
-  hashedPassword: string;
-
-  @Prop({ required: true , unique: true })
   mobileNumber: string;
 
   @Prop({ required: true })
   country: string;
 
   @Prop()
-  education: string;  // what ?
+  education: string; // what ?
 
-  @Prop( { type: String, enum: ExperienceYears, default: ExperienceYears.JUNIOR })
+  @Prop({
+    type: String,
+    enum: ExperienceYears,
+    default: ExperienceYears.JUNIOR,
+  })
   experienceYears: ExperienceYears;
 
   @Prop({ type: [String], default: [] })
