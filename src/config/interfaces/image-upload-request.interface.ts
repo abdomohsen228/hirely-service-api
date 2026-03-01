@@ -1,14 +1,14 @@
-import { Request, ParamsDictionary } from 'express-serve-static-core';
-import { ParsedQs } from 'qs';
+import { Request } from 'express';
+import { Types } from 'mongoose';
 
-export interface ImageUploadRequest extends Request<
-  ParamsDictionary,
-  any,
-  any,
-  ParsedQs,
-  Record<string, any>
-> {
-  uploadedFilenames?: string[];
+export interface ImageUploadRequest extends Request {
+  user?: {
+    _id: Types.ObjectId;
+    role: string;
+    email: string;
+  };
+
+  uploadUserId?: string;
   uploadUUID?: string;
-  uploadUserId?: number;
+  uploadedFilenames?: string[];
 }

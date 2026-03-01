@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+
 import {
   IsNotEmpty,
   IsOptional,
@@ -6,7 +7,10 @@ import {
   IsUrl,
   MaxLength,
   Matches,
+  IsEnum,
 } from 'class-validator';
+import { CompanyIndustry } from 'src/database/enums/companyIndustry.enum';
+import { CompanySize } from 'src/database/enums/companySize.enum';
 
 export class CompleteHrRegistrationRequestDto {
   @ApiProperty({ example: 'Ahmed Salah' })
@@ -40,16 +44,18 @@ export class CompleteHrRegistrationRequestDto {
 
   @ApiProperty({ enum: ['SMALL', 'MEDIUM', 'LARGE'], required: false })
   @IsOptional()
-  @IsString()
-  companySize?: string;
+  @ApiProperty({ enum: CompanySize })
+  @IsEnum(CompanySize)
+  companySize?: CompanySize;
 
   @ApiProperty({
     enum: ['TECHNOLOGY', 'HEALTHCARE', 'FINANCE'],
     required: false,
   })
   @IsOptional()
-  @IsString()
-  companyIndustry?: string;
+  @ApiProperty({ enum: CompanyIndustry })
+  @IsEnum(CompanyIndustry)
+  companyIndustry?: CompanyIndustry;
 
   @ApiProperty({ example: 'HR Manager', required: false })
   @IsOptional()
