@@ -27,7 +27,6 @@ import {
   MAX_IMAGE_FILE_SIZE_BYTES,
   MAX_PDF_FILE_SIZE_BYTES,
 } from 'src/config/multer-constants';
-import path from 'path';
 import { UploadedImageFile } from 'src/config/interfaces/image-upload-file.interface';
 import { ConfigService } from '@nestjs/config';
 import { CompleteCandidateRegistrationResponseDto } from './dtos/response/completeCandidateRegistrationResponse.dto';
@@ -109,6 +108,12 @@ export class AuthService {
       MAX_PDF_FILE_SIZE_BYTES,
     );
     const emailPrefix = user.email.split('@')[0];
+    const existingCandidate = await this.candidateModel.findOne({
+      username: emailPrefix,
+    });
+    if (existingCandidate) {
+      throw new BadRequestException('Data already completed for this user');
+    }
 
     const candidate = await this.candidateModel.create({
       ...dto,
@@ -223,14 +228,15 @@ export class AuthService {
     if (!allowedTypes.includes(file.mimetype)) {
       throw new BadRequestException('Invalid file type');
     }
-
     if (file.size > maxSize) {
       throw new BadRequestException('File size exceeds limit');
     }
 
-    const uploadUUID =
-      file.uploadUUID || path.basename(path.dirname(file.path));
+    const serverUrl = this.configService.get<string>('SERVER_URL');
+    const relativePath = file.destination
+      .split('uploads')[1]
+      .replace(/\\/g, '/');
 
-    return `${this.configService.get<string>('SERVER_URL')}/uploads/userIds/${uploadUUID}/${file.filename}`;
+    return `${serverUrl}/uploads${relativePath}/${file.filename}`;
   }
 }

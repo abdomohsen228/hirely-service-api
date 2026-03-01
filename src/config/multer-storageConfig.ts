@@ -1,4 +1,4 @@
-import { diskStorage, FileFilterCallback } from 'multer';
+import { diskStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Request } from 'express';
@@ -7,42 +7,48 @@ import { BadRequestException } from '@nestjs/common';
 
 import {
   ALLOWED_IMAGE_MIME_TYPES,
+  ALLOWED_PDF_MIME_TYPES,
   MAX_IMAGE_FILE_SIZE_BYTES,
 } from './multer-constants';
 import { ImageUploadRequest } from './interfaces/image-upload-request.interface';
 
 export class MulterFileSystemStorage {
-  static getStorageConfig(
-    uploadType: 'places' | 'userIds',
-    maxFileCount: number = 5,
-  ) {
+  static getStorageConfig(uploadType: 'userIds', maxFileCount: number = 5) {
     return {
       storage: diskStorage({
         destination: (
-          imageUploadRequest: ImageUploadRequest,
-          imageUploadfile,
-          diskStorageCallback,
+          req: ImageUploadRequest,
+          file: Express.Multer.File,
+          cb,
         ) => {
-          const userIdFromParams = Number(imageUploadRequest.params['id']);
+          const userId = req.user?._id?.toString();
 
-          if (isNaN(userIdFromParams)) {
-            throw new BadRequestException('Invalid user id');
+          if (!userId) {
+            return cb(new Error('Invalid user id'), '');
           }
-          imageUploadRequest.uploadUserId = userIdFromParams;
 
-          const userBaseDirectory =
-            uploadType === 'places' ? 'places' : 'userIds';
-          const userUploadsDirectory = path.join(
+          let subFolder = '';
+
+          if (file.fieldname === 'profilePicture') {
+            subFolder = 'profileImage';
+          } else if (file.fieldname === 'cvFile') {
+            subFolder = 'cv';
+          } else {
+            return cb(new Error('Unexpected file field'), '');
+          }
+
+          const uploadPath = path.join(
             __dirname,
             '..',
             '..',
             'uploads',
-            userBaseDirectory,
-            `user_${userIdFromParams}`,
+            `user_${userId}`,
+            subFolder,
           );
 
-          fs.mkdirSync(userUploadsDirectory, { recursive: true });
-          diskStorageCallback(null, userUploadsDirectory);
+          fs.mkdirSync(uploadPath, { recursive: true });
+
+          cb(null, uploadPath);
         },
         filename: (
           imageUploadRequest: ImageUploadRequest,
@@ -69,15 +75,21 @@ export class MulterFileSystemStorage {
         },
       }),
       limits: { fileSize: MAX_IMAGE_FILE_SIZE_BYTES, file: maxFileCount },
-      fileFilter: (
-        imageUploadRequest: Request,
-        imageUploadFile: Express.Multer.File,
-        fileFilterCallback: FileFilterCallback,
-      ) => {
-        if (!ALLOWED_IMAGE_MIME_TYPES.includes(imageUploadFile.mimetype)) {
-          throw new BadRequestException('Invalid iamge type');
+
+      fileFilter: (req: Request, file: Express.Multer.File, cb) => {
+        if (file.fieldname === 'profilePicture') {
+          if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.mimetype)) {
+            return cb(new Error('Invalid image type'), false);
+          }
+        } else if (file.fieldname === 'cvFile') {
+          if (!ALLOWED_PDF_MIME_TYPES.includes(file.mimetype)) {
+            return cb(new BadRequestException('CV must be a PDF file'), false);
+          }
+        } else {
+          return cb(new BadRequestException('Unexpected file field'), false);
         }
-        fileFilterCallback(null, true);
+
+        cb(null, true);
       },
     };
   }
