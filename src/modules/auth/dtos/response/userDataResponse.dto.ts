@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { UserRole } from 'src/database/enums/userRole.enum';
 import { UserDocument } from 'src/database/schemas/user.schema';
 
 export class UserDataDto {
@@ -11,12 +12,20 @@ export class UserDataDto {
   @ApiProperty({ example: 'john.doe@example.com' })
   email: string;
 
+  @ApiProperty({ example: UserRole.CANDIDATE })
+  role: string;
+
+  @ApiProperty({ example: false })
+  isProfileCompleted: boolean;
+
   static userDateResponse(token: string, user: UserDocument): UserDataDto {
     const userDataDto = new UserDataDto();
 
     userDataDto.accessToken = token;
     userDataDto.id = user.id;
     userDataDto.email = user.email;
+    userDataDto.role = user.role;
+    userDataDto.isProfileCompleted = user.isProfileCompleted;
 
     return userDataDto;
   }
