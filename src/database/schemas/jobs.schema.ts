@@ -1,7 +1,7 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { JobStatus } from '../enums/jobStatus.enum';
-import { ExperienceYears } from '../enums/experienceYears.enum';
+import { ExperienceLevel } from '../enums/experienceYears.enum';
 
 export type JobDocument = Job & Document;
 
@@ -30,10 +30,10 @@ export class Job extends Document {
 
   @Prop({ 
     required: true,
-    enum: ExperienceYears, 
-    default: ExperienceYears.JUNIOR,
+    enum: ExperienceLevel, 
+    default: ExperienceLevel.JUNIOR,
   })
-  entryLevel: ExperienceYears;
+  entryLevel: ExperienceLevel;
 
   @Prop({ 
     required: true ,
