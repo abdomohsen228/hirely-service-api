@@ -4,14 +4,18 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
+import { UploadModule } from './upload/upload.module';
+import { S3Module } from './s3/s3.module';
+import awsConfig from './config/aws.config';
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: process.env.NODE_ENV !== 'production' ? '.env' : undefined,
+      load: [awsConfig],
     }),
     MongooseModule.forRootAsync({
-      imports: [ConfigModule, AuthModule],
+      imports: [ConfigModule, AuthModule, UploadModule, S3Module],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const dbUrl = configService.get<string>('DATABASE_URL');
