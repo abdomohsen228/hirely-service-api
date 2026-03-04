@@ -10,12 +10,6 @@ export type HrDocument = Hr & User;
 @Schema({ timestamps: true })
 export class Hr extends Document {
   @Prop({ required: true })
-  fName: string;
-
-  @Prop({ required: true })
-  lName: string;
-
-  @Prop({ required: true })
   fullName: string;
 
   @Prop({ required: true, unique: true, lowercase: true })
@@ -29,6 +23,9 @@ export class Hr extends Document {
 
   @Prop()
   companyWebsite: string;
+
+  @Prop({ maxlength: 1000 })
+  companySummary: string;
 
   @Prop({
     type: String,

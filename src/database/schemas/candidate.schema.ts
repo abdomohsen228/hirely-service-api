@@ -1,19 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { profileStatus } from '../enums/user-profileStatus.enum';
-import { ExperienceYears } from '../enums/experienceYears.enum';
+import { ExperienceLevel } from '../enums/experienceYears.enum';
 import { User } from './user.schema';
 
 export type CandidateDocument = Candidate & User;
 
 @Schema({ timestamps: true })
 export class Candidate extends Document {
-  @Prop({ required: true })
-  fName: string;
-
-  @Prop({ required: true })
-  lName: string;
-
   @Prop({ required: true })
   fullName: string;
 
@@ -27,17 +21,26 @@ export class Candidate extends Document {
   country: string;
 
   @Prop()
-  education: string; // what ?
+  education: string;
 
   @Prop({
     type: String,
-    enum: ExperienceYears,
-    default: ExperienceYears.JUNIOR,
+    enum: ExperienceLevel,
+    default: ExperienceLevel.JUNIOR,
   })
-  experienceYears: ExperienceYears;
+  experienceLevel: ExperienceLevel;
 
   @Prop({ type: [String], default: [] })
   skills: string[];
+
+  @Prop({ required: false, min: 0 })
+  yearsOfExperience: number;
+
+  @Prop({ maxlength: 1000 })
+  profileSummary: string;
+
+  @Prop()
+  profilePictureUrl: string;
 
   @Prop({ type: [String], default: [] })
   languages: string[];

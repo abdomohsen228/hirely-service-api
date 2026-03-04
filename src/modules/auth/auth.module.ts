@@ -17,30 +17,20 @@ import {
   providers: [AuthService, AuthGuard],
   imports: [
     ConfigModule,
-    MongooseModule.forFeatureAsync([
-      {
-        name: User.name,
-        useFactory: () => {
-          const schema = UserSchema;
-
-          schema.discriminator(Hr.name, HrSchema);
-          schema.discriminator(Candidate.name, CandidateSchema);
-
-          return schema;
-        },
-      },
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Candidate.name, schema: CandidateSchema },
+      { name: Hr.name, schema: HrSchema },
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       imports: [ConfigModule],
-      useFactory: (config: ConfigService): JwtModuleOptions => {
-        return {
-          secret: config.get<string>('JWT_SECRET'),
-          signOptions: {
-            expiresIn: Number(config.get<string>('JWT_EXPIRATION')),
-          },
-        };
-      },
+      useFactory: (config: ConfigService): JwtModuleOptions => ({
+        secret: config.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: Number(config.get<string>('JWT_EXPIRATION')),
+        },
+      }),
     }),
   ],
   exports: [JwtModule, AuthGuard],
