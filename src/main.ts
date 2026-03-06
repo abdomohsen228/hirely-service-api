@@ -36,7 +36,7 @@ async function bootstrap() {
 
   app.enableCors(getCorsConfig(configService));
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/api/v1/uploads/',
+    prefix: '/uploads/',
   });
 
   await app.listen(process.env.PORT ?? 3000);
