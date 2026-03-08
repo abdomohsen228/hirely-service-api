@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from "@nestjs/config";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
 // import { randomUUID } from 'crypto';
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 @Injectable()
@@ -40,5 +40,16 @@ export class S3Service {
         return url;
     }
     
-  
+
+
+    async testConnection(bucketName:string = this.s3Config.get<string>('aws.s3BucketName')) {
+        try {
+            const result = await this.s3.send(new HeadBucketCommand({ Bucket: bucketName }));
+            console.log('S3 Connection Test Successful.');
+            return result;
+        } catch (error) {
+            console.error('Error testing S3 connection:', error);
+            throw new Error('Failed to test S3 connection');
+        }
+    }
 }
