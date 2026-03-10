@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from "@nestjs/config";
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadBucketCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 // import { randomUUID } from 'crypto';
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 @Injectable()
@@ -27,7 +27,17 @@ export class S3Service {
             key: params.key,
         };
     }
-    
+
+    async deleteFile(params:{
+        key: string,
+        bucket: string
+    }) {
+        const command = new DeleteObjectCommand({
+            Bucket: params.bucket ?? this.s3Config.get<string>('aws.s3BucketName'),
+            Key: params.key
+        });
+        return await this.s3.send(command);
+    }
 
     //////////////////////////////////////////////
     async getFileUrl(key: string) {
