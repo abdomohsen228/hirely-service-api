@@ -60,6 +60,10 @@ export class Candidate extends Document {
     default: profileStatus.ACTIVE,
   })
   profileStatus: profileStatus;
+
+  // profile pic
+
+  // introduction graph
 }
 
 export const CandidateSchema = SchemaFactory.createForClass(Candidate);

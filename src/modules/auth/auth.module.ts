@@ -33,6 +33,6 @@ import {
       }),
     }),
   ],
-  exports: [JwtModule, AuthGuard],
+  exports: [JwtModule, AuthGuard, MongooseModule],
 })
 export class AuthModule {}

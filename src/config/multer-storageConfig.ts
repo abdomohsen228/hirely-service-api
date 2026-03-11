@@ -5,6 +5,7 @@ import { Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { BadRequestException } from '@nestjs/common';
 
+const id  = uuidv4();
 import {
   ALLOWED_IMAGE_MIME_TYPES,
   ALLOWED_PDF_MIME_TYPES,
@@ -55,7 +56,7 @@ export class MulterFileSystemStorage {
           fileUploadRequest,
           imageFileNameCallback,
         ) => {
-          const uniqueFileId = uuidv4();
+          const uniqueFileId = id;
           imageUploadRequest.uploadUUID = uniqueFileId;
 
           const baseFileName = path
