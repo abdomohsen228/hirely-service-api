@@ -1,12 +1,16 @@
-import { Body, Controller, Get, Post, Put, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Req } from '@nestjs/common';
 import { UploadService } from './upload.service';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guards';
 import { UseGuards } from '@nestjs/common';
 import { ImageUploadDto } from './dtos/imageUpload.dto';
+import { UploadProducer } from 'src/queues/upload-queue/producer/upload.producer';
 
 @Controller('upload')
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) { }
+  constructor(
+    private readonly uploadService: UploadService,
+    private readonly uploadProducer: UploadProducer
+  ) { }
 
   @Post('video')
   createVideoUpload(@Req() req: any, @Body() body: any) {
@@ -40,16 +44,16 @@ export class UploadController {
     });
   }
 
-  @Get('image')
+  @Get('image/:id')
   @UseGuards(AuthGuard)
-  async getProfilePictureUrl(@Req() req: any) {
-    return this.uploadService.getProfilePictureUrl(req.user?.id?.toString());
+  async getProfilePictureUrl(@Req() req: any, @Param('id') id: string) {
+    return this.uploadService.getProfilePictureUrl(id);
   }
 
-  @Get('cv')
+  @Get('cv/:id')
   @UseGuards(AuthGuard)
-  async getCvUrl(@Req() req: any) {
-    return this.uploadService.getCvUrl(req.user?.id?.toString());
+  async getCvUrl(@Req() req: any, @Param('id') id: string) {
+    return this.uploadService.getCvUrl(id);
   }
 
   @Put('image')
@@ -77,5 +81,15 @@ export class UploadController {
   @Get('test')
   testS3Connection() {
     return this.uploadService.testConnection();
+  }
+
+  @Post('test-queue')
+  testQueue(@Req() req: any, @Body() body: any) {
+    return this.uploadProducer.validateUpload({
+      key: body.key,
+      status: body.status,
+      type: 'image',
+      reason: body.reason 
+    });
   }
 }

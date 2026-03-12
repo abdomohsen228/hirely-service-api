@@ -123,9 +123,9 @@ export class UploadService {
         const user = await this.userModel.findById(userId);
         if (!user) {
             throw new NotFoundException('User not found');
-        }console.log("Returning Profile Picture URL:", user.profilePictureUrl);
+        }
         if (user.profilePictureStatus !== PictureCVStatus.APPROVED) {
-            throw new BadRequestException('User has no profile picture or their profile picture is not approved yet');
+            throw new BadRequestException(user.rejectionReason ? `Profile picture not approved\nReason: ${user.rejectionReason}` : 'User has no profile picture or their profile picture is not approved yet');
         }
         
         return user.profilePictureUrl;
@@ -206,47 +206,58 @@ export class UploadService {
     }
 
     // Approval and rejection functions after s3 triggers validations events
-    async approveProfilePicture(userId: string) {
-        const user = await this.userModel.findById(userId);
+    async validateProfileUpload(key: string, status: string, reason: string) {
+        const user = await this.userModel.findOne({ profilePictureUrl: key });
         if (!user) {
             throw new NotFoundException('User not found');
         }
-        user.profilePictureStatus = PictureCVStatus.APPROVED;
-        await user.save();
-        return { message: 'Profile picture approved' };
+        if(status === 'success') {
+            user.profilePictureStatus = PictureCVStatus.APPROVED;
+            await user.save();
+            return { message: 'Profile picture approved' };
+        } else {
+            this.s3Service.deleteFile({ key, bucket: this.bucket });
+            user.profilePictureStatus = PictureCVStatus.REJECTED;
+            user.profilePictureUrl = undefined;
+            user.rejectionReason = reason;
+            await user.save();
+            return { message: `Profile picture rejected\nReason: ${reason}` };
+        }
     }
 
-    async rejectProfilePicture(userId: string,rejectionReason: string) {
-        const user = await this.userModel.findById(userId);
+    async validateCvUpload(key: string, status: string, reason: string) {
+        const user = await this.userModel.findOne({ cvUrl: key });
         if (!user) {
             throw new NotFoundException('User not found');
         }
-        user.profilePictureStatus = PictureCVStatus.REJECTED;
-        user.profilePictureUrl = undefined;
-        await user.save();
-        return { message: `Profile picture rejected\nReason: ${rejectionReason}` };
+        if(status === 'success') {
+            user.cvStatus = PictureCVStatus.APPROVED;
+            await user.save();
+            return { message: 'CV approved' };
+        } else {
+            user.cvStatus = PictureCVStatus.REJECTED;
+            user.cvUrl = undefined;
+            await user.save();
+            return { message: `CV rejected\nReason: ${reason}` };
+        }
     }
 
-    async approveCv(userId: string) {
-        const user = await this.userModel.findById(userId);
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-        user.cvStatus = PictureCVStatus.APPROVED;
-        await user.save();
-        return { message: 'CV approved' };
-    }
-
-    async rejectCv(userId: string,rejectionReason: string) {
-        const user = await this.userModel.findById(userId);
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-        user.cvStatus = PictureCVStatus.REJECTED;
-        user.cvUrl = undefined;
-        await user.save();
-        return { message: `CV rejected\nReason: ${rejectionReason}` };
-    }
+    // async validateVideoUpload(key: string, status: string, reason: string) {
+    //     const user = await this.userModel.findOne({ videoUrl: key });
+    //     if (!user) {
+    //         throw new NotFoundException('User not found');
+    //     }
+    //     if(status === 'success') {
+    //         user.videoStatus = PictureCVStatus.APPROVED;
+    //         await user.save();
+    //         return { message: 'Video approved' };
+    //     } else {
+    //         user.videoStatus = PictureCVStatus.REJECTED;
+    //         user.videoUrl = undefined;
+    //         await user.save();
+    //         return { message: `Video rejected\nReason: ${reason}` };
+    //     }
+    // }
 
     async testConnection() {
         return this.s3Service.testConnection();
