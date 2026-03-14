@@ -49,11 +49,8 @@ export class UploadService {
         userId: string;
         fileName: string;
         contentType: string;
-        filesize: number;
     }) { 
-        if (params.filesize > MAX_PDF_FILE_SIZE_BYTES) {
-            throw new NotAcceptableException('File size exceeds the allowed limit of 10MB.');
-        }
+        
         if (!ALLOWED_PDF_MIME_TYPES.includes(params.contentType)) {
             throw new NotAcceptableException('Invalid file format');
         }
@@ -85,18 +82,13 @@ export class UploadService {
         userId: string;
         fileName: string;
         contentType: string;
-        filesize: number;
     }) {
-        if (params.filesize > MAX_IMAGE_FILE_SIZE_BYTES) {
-            throw new NotAcceptableException('File size exceeds the allowed limit.');
-        }
         if (!ALLOWED_IMAGE_MIME_TYPES.includes(params.contentType)) {
             throw new NotAcceptableException('Invalid image format');
         }
         if (!ALLOWED_IMAGE_EXTENSIONS.includes(path.extname(params.fileName))) {
             throw new NotAcceptableException('Invalid image extension');
         }
-        
 
         const Id = randomUUID();
         const extension = path.extname(params.fileName);
@@ -127,8 +119,9 @@ export class UploadService {
         if (user.profilePictureStatus !== PictureCVStatus.APPROVED) {
             throw new BadRequestException(user.rejectionReason ? `Profile picture not approved\nReason: ${user.rejectionReason}` : 'User has no profile picture or their profile picture is not approved yet');
         }
+        const key = user.profilePictureUrl;
+        return this.s3Service.getUrl({ key, bucket: this.bucket });
         
-        return user.profilePictureUrl;
     }
 
     async getCvUrl(userId: string) {
@@ -139,14 +132,13 @@ export class UploadService {
         if (user.cvStatus !== PictureCVStatus.APPROVED) {
             throw new BadRequestException('User has no CV or their CV is not approved yet');
         }
-        return user.cvUrl;
+        return this.s3Service.getUrl({ key: user.cvUrl, bucket: this.bucket });
     }
 
     async updateProfilePictureUrl(params: {
         userId: string;
         fileName: string;
         contentType: string;
-        filesize: number;
     }) {
         // console.log(params);
         const user = await this.userModel.findById(params.userId);
@@ -155,9 +147,6 @@ export class UploadService {
         }
         const key = user.profilePictureUrl;
 
-        if (params.filesize > MAX_IMAGE_FILE_SIZE_BYTES) {
-            throw new NotAcceptableException('File size exceeds the allowed limit.');
-        }
         if (!ALLOWED_IMAGE_EXTENSIONS.includes(path.extname(params.fileName))) {
             throw new NotAcceptableException('Invalid image extension');
         }
@@ -168,8 +157,7 @@ export class UploadService {
         return this.createProfilePictureUploadUrl({
             userId: params.userId,
             fileName: params.fileName,
-            contentType: params.contentType,
-            filesize: params.filesize
+            contentType: params.contentType
         });
     }
 
@@ -177,7 +165,6 @@ export class UploadService {
         userId: string;
         fileName: string;
         contentType: string;
-        filesize: number;
     }) {
         const user = await this.userModel.findById(params.userId);
         if (!user) {
@@ -185,9 +172,6 @@ export class UploadService {
         }
         const key = user.cvUrl;
 
-        if (params.filesize > MAX_PDF_FILE_SIZE_BYTES) {
-            throw new NotAcceptableException('File size exceeds the allowed limit of 10MB.');
-        }
         if (!ALLOWED_PDF_MIME_TYPES.includes(params.contentType)) {
             throw new NotAcceptableException('Invalid PDF format');
         }
@@ -200,8 +184,7 @@ export class UploadService {
         return this.createCvUploadUrl({
             userId: params.userId,
             fileName: params.fileName,
-            contentType: params.contentType,
-            filesize: params.filesize
+            contentType: params.contentType
         });
     }
 
@@ -213,10 +196,11 @@ export class UploadService {
         }
         if(status === 'success') {
             user.profilePictureStatus = PictureCVStatus.APPROVED;
+            user.rejectionReason = undefined;
             await user.save();
             return { message: 'Profile picture approved' };
         } else {
-            this.s3Service.deleteFile({ key, bucket: this.bucket });
+            // this.s3Service.deleteFile({ key, bucket: this.bucket });
             user.profilePictureStatus = PictureCVStatus.REJECTED;
             user.profilePictureUrl = undefined;
             user.rejectionReason = reason;

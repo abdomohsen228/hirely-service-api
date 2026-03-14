@@ -28,8 +28,7 @@ export class UploadController {
     return this.uploadService.createProfilePictureUploadUrl({
       userId: req.user?.id?.toString(),
       fileName: body.fileName,
-      contentType: body.contentType,
-      filesize: body.filesize
+      contentType: body.contentType
     });
   }
 
@@ -39,8 +38,7 @@ export class UploadController {
     return this.uploadService.createCvUploadUrl({
       userId: req.user?.id?.toString(),
       fileName: body.fileName,
-      contentType: body.contentType,
-      filesize: body.filesize
+      contentType: body.contentType
     });
   }
 
@@ -62,8 +60,7 @@ export class UploadController {
     return this.uploadService.updateProfilePictureUrl({
       userId: req.user?.id?.toString(),
       fileName: body.fileName,
-      contentType: body.contentType,
-      filesize: body.filesize
+      contentType: body.contentType
     });
   }
 
@@ -73,23 +70,22 @@ export class UploadController {
     return this.uploadService.updateCvUrl({
       userId: req.user?.id?.toString(),
       fileName: body.fileName,
-      contentType: body.contentType,
-      filesize: body.filesize
+      contentType: body.contentType
     });
   }
 
-  @Get('test')
-  testS3Connection() {
-    return this.uploadService.testConnection();
-  }
+  // @Get('test')
+  // testS3Connection() {
+  //   return this.uploadService.testConnection();
+  // }
 
-  @Post('test-queue')
-  testQueue(@Req() req: any, @Body() body: any) {
-    return this.uploadProducer.validateUpload({
-      key: body.key,
-      status: body.status,
-      type: 'image',
-      reason: body.reason 
-    });
-  }
+  // @Post('test-queue')
+  // testQueue(@Req() req: any, @Body() body: any) {
+  //   return this.uploadProducer.validateUpload({
+  //     key: body.key,
+  //     status: body.status,
+  //     type: 'image',
+  //     reason: body.reason 
+  //   });
+  // }
 }
