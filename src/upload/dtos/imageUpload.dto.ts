@@ -9,7 +9,4 @@ export class ImageUploadDto {
     @IsNotEmpty()
     contentType: string;
 
-    @IsNotEmpty()
-    @IsNumber()
-    filesize: number;
 }

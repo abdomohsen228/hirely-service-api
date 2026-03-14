@@ -60,7 +60,7 @@ export class UploadService {
 
         const Id = randomUUID();
         const extension = path.extname(params.fileName);
-        const key = `cvs/${params.userId}/${Id}/${extension}`;
+        const key = `resumes/${params.userId}/${Id}${extension}`;
 
         const user = await this.userModel.findById(params.userId);
         if (!user) {
@@ -130,7 +130,7 @@ export class UploadService {
             throw new NotFoundException('User not found');
         }
         if (user.cvStatus !== PictureCVStatus.APPROVED) {
-            throw new BadRequestException('User has no CV or their CV is not approved yet');
+            throw new BadRequestException(user.rejectionReason ? `CV not approved\nReason: ${user.rejectionReason}` : 'User has no CV or their CV is not approved yet');
         }
         return this.s3Service.getUrl({ key: user.cvUrl, bucket: this.bucket });
     }
@@ -200,9 +200,7 @@ export class UploadService {
             await user.save();
             return { message: 'Profile picture approved' };
         } else {
-            // this.s3Service.deleteFile({ key, bucket: this.bucket });
             user.profilePictureStatus = PictureCVStatus.REJECTED;
-            user.profilePictureUrl = undefined;
             user.rejectionReason = reason;
             await user.save();
             return { message: `Profile picture rejected\nReason: ${reason}` };
@@ -216,11 +214,12 @@ export class UploadService {
         }
         if(status === 'success') {
             user.cvStatus = PictureCVStatus.APPROVED;
+            user.rejectionReason = undefined;
             await user.save();
             return { message: 'CV approved' };
         } else {
             user.cvStatus = PictureCVStatus.REJECTED;
-            user.cvUrl = undefined;
+            user.rejectionReason = reason;
             await user.save();
             return { message: `CV rejected\nReason: ${reason}` };
         }
