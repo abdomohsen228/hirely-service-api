@@ -28,6 +28,15 @@ export class S3Service {
         };
     }
 
+    async getUrl( params: { key: string, bucket: string }) {
+        const command = new GetObjectCommand({
+            Bucket: params.bucket,
+            Key: params.key
+        });
+        return await getSignedUrl(this.s3, command, { expiresIn: 3600 });
+    }
+
+
     async deleteFile(params:{
         key: string,
         bucket: string

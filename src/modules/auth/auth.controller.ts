@@ -94,7 +94,7 @@ export class AuthController {
     type: CompleteCandidateRegistrationResponseDto,
   })
   @UseInterceptors(
-    FileFieldsInterceptor(
+    FileFieldsInterceptor(  //
       [
         { name: 'profilePicture', maxCount: 1 },
         { name: 'cvFile', maxCount: 1 },
@@ -102,7 +102,7 @@ export class AuthController {
       MulterFileSystemStorage.getStorageConfig('userIds', 2),
     ),
   )
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data')  //
   public async completeCandidateData(
     @CurrentUser() userPayload: JwtPayload,
     @Body() dto: CompleteCandidateRegistrationRequestDto,

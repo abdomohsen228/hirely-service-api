@@ -49,6 +49,8 @@ export class User extends Document {
    })
   cvStatus: PictureCVStatus;
 
+  @Prop()
+  rejectionReason: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

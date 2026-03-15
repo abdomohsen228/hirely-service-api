@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UploadModule } from './upload/upload.module';
 import { S3Module } from './s3/s3.module';
 import awsConfig from './config/aws.config';
+import { BullModule } from '@nestjs/bullmq';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -25,8 +26,26 @@ import awsConfig from './config/aws.config';
         return { uri: dbUrl };
       },
     }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST,
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        username: process.env.REDIS_USERNAME,
+        password: process.env.REDIS_PASSWORD,
+        tls:{}
+      },
+      defaultJobOptions: {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
