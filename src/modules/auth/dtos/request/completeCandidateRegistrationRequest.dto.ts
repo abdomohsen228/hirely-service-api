@@ -55,12 +55,15 @@ export class CompleteCandidateRegistrationRequestDto {
   profileSummary?: string;
 
   @ApiProperty({
-    type: 'string',
-    format: 'binary',
+    example:
+      'https://your-bucket.s3.amazonaws.com/profile_pictures/userId/uuid.jpg',
     required: false,
-    description: 'Profile picture file',
+    description: 'Profile picture public URL (already uploaded)',
   })
-  profilePicture?: any;
+  @IsOptional()
+  @IsUrl()
+  profilePictureUrl?: string;
+
   @ApiProperty({
     example: ['Node.js', 'NestJS'],
     required: false,
@@ -87,12 +90,13 @@ export class CompleteCandidateRegistrationRequestDto {
   currentJobTitle?: string;
 
   @ApiProperty({
-    type: 'string',
-    format: 'binary',
+    example: 'https://your-bucket.s3.amazonaws.com/resumes/userId/uuid.pdf',
     required: false,
-    description: 'Upload CV file',
+    description: 'CV public URL (already uploaded)',
   })
-  cvFile?: any;
+  @IsOptional()
+  @IsUrl()
+  cvFileUrl?: string;
 
   @ApiProperty({
     example: 'https://portfolio.com',

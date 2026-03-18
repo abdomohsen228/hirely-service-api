@@ -5,9 +5,7 @@ import {
   HttpStatus,
   Patch,
   Post,
-  UploadedFiles,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginRequestDto } from './dtos/request/loginRequest.dto';
@@ -15,7 +13,6 @@ import { UserDataDto } from './dtos/response/userDataResponse.dto';
 import {
   ApiBearerAuth,
   ApiBody,
-  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -25,8 +22,6 @@ import { CurrentUser } from 'src/decorators/currentPayload';
 import { JwtPayload } from 'src/decorators/jwtPayload.interface';
 import { RegisterRequestDto } from './dtos/request/registerRequest.dto';
 import { ChooseRoleRequestDto } from './dtos/request/chooseRoleRequest.dto';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { MulterFileSystemStorage } from 'src/config/multer-storageConfig';
 import { CompleteCandidateRegistrationRequestDto } from './dtos/request/completeCandidateRegistrationRequest.dto';
 import { CompleteCandidateRegistrationResponseDto } from './dtos/response/completeCandidateRegistrationResponse.dto';
 import { CompleteHrRegistrationRequestDto } from './dtos/request/completeHrRegistrationRequest.dto';
@@ -93,31 +88,11 @@ export class AuthController {
     description: 'Candidate data successfully saved',
     type: CompleteCandidateRegistrationResponseDto,
   })
-  @UseInterceptors(
-    FileFieldsInterceptor(  //
-      [
-        { name: 'profilePicture', maxCount: 1 },
-        { name: 'cvFile', maxCount: 1 },
-      ],
-      MulterFileSystemStorage.getStorageConfig('userIds', 2),
-    ),
-  )
-  @ApiConsumes('multipart/form-data')  //
   public async completeCandidateData(
     @CurrentUser() userPayload: JwtPayload,
     @Body() dto: CompleteCandidateRegistrationRequestDto,
-    @UploadedFiles()
-    files: {
-      profilePicture?: Express.Multer.File[];
-      cvFile?: Express.Multer.File[];
-    },
   ): Promise<CompleteCandidateRegistrationResponseDto> {
-    return this.authServices.completeCandidateData(
-      userPayload.id,
-      dto,
-      files?.profilePicture?.[0],
-      files?.cvFile?.[0],
-    );
+    return this.authServices.completeCandidateData(userPayload.id, dto);
   }
 
   @Post('complete-registration/hr')

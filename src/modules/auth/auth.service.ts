@@ -21,14 +21,6 @@ import {
   Candidate,
   CandidateDocument,
 } from 'src/database/schemas/candidate.schema';
-import {
-  ALLOWED_IMAGE_MIME_TYPES,
-  ALLOWED_PDF_MIME_TYPES,
-  MAX_IMAGE_FILE_SIZE_BYTES,
-  MAX_PDF_FILE_SIZE_BYTES,
-} from 'src/config/multer-constants';
-import { UploadedImageFile } from 'src/config/interfaces/image-upload-file.interface';
-import { ConfigService } from '@nestjs/config';
 import { CompleteCandidateRegistrationResponseDto } from './dtos/response/completeCandidateRegistrationResponse.dto';
 import { Hr, HrDocument } from 'src/database/schemas/hr.schema';
 import { CompleteHrRegistrationRequestDto } from './dtos/request/completeHrRegistrationRequest.dto';
@@ -42,7 +34,6 @@ export class AuthService {
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
-    private readonly configService: ConfigService,
   ) {}
 
   public async register(
@@ -88,25 +79,12 @@ export class AuthService {
   public async completeCandidateData(
     userId: string,
     dto: CompleteCandidateRegistrationRequestDto,
-    profilePicture?: Express.Multer.File,
-    cvFile?: Express.Multer.File,
   ): Promise<CompleteCandidateRegistrationResponseDto> {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
     if (user.role !== UserRole.CANDIDATE)
       throw new ForbiddenException('Only candidates allowed');
 
-    const profilePictureUrl = this.validateAndBuildFileUrl(
-      profilePicture,
-      ALLOWED_IMAGE_MIME_TYPES,
-      MAX_IMAGE_FILE_SIZE_BYTES,
-    );
-
-    const cvFileUrl = this.validateAndBuildFileUrl(
-      cvFile,
-      ALLOWED_PDF_MIME_TYPES,
-      MAX_PDF_FILE_SIZE_BYTES,
-    );
     const emailPrefix = user.email.split('@')[0];
     const existingCandidate = await this.candidateModel.findOne({
       username: emailPrefix,
@@ -118,8 +96,8 @@ export class AuthService {
     const candidate = await this.candidateModel.create({
       ...dto,
       username: emailPrefix,
-      profilePictureUrl: profilePictureUrl,
-      cvFileUrl: cvFileUrl,
+      profilePictureUrl: dto.profilePictureUrl,
+      cvFileUrl: dto.cvFileUrl,
     });
 
     user.isProfileCompleted = true;
@@ -219,24 +197,5 @@ export class AuthService {
 
   private generateAccessToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload);
-  }
-  private validateAndBuildFileUrl(
-    file: UploadedImageFile,
-    allowedTypes: readonly string[],
-    maxSize: number,
-  ): string {
-    if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Invalid file type');
-    }
-    if (file.size > maxSize) {
-      throw new BadRequestException('File size exceeds limit');
-    }
-
-    const serverUrl = this.configService.get<string>('SERVER_URL');
-    const relativePath = file.destination
-      .split('uploads')[1]
-      .replace(/\\/g, '/');
-
-    return `${serverUrl}/uploads${relativePath}/${file.filename}`;
   }
 }
