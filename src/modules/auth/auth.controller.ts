@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -26,6 +28,8 @@ import { CompleteCandidateRegistrationRequestDto } from './dtos/request/complete
 import { CompleteCandidateRegistrationResponseDto } from './dtos/response/completeCandidateRegistrationResponse.dto';
 import { CompleteHrRegistrationRequestDto } from './dtos/request/completeHrRegistrationRequest.dto';
 import { CompleteHrRegistrationResponseDto } from './dtos/response/completeHrRegistrationResponse.dto';
+import { GoogleAuthGuard } from './guards/googleAuth.guard';
+import { GoogleAuthResponseDto } from './dtos/response/googleAuthResponse.dto';
 @ApiTags('App Authentication')
 @ApiBearerAuth()
 @Controller('/auth')
@@ -110,6 +114,29 @@ export class AuthController {
     @Body() dto: CompleteHrRegistrationRequestDto,
   ): Promise<CompleteHrRegistrationResponseDto> {
     return this.authServices.completeHrData(userPayload.id, dto);
+  }
+
+  @Get('google/login')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Login with Google' })
+  @ApiResponse({
+    status: HttpStatus.FOUND,
+    description: 'Redirecting to Google authentication',
+  })
+  public handleLogin() {
+    return { message: 'Redirecting to Google authentication' };
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User authenticated via Google',
+    type: GoogleAuthResponseDto,
+  })
+  public async handleRedirect(@Req() req): Promise<GoogleAuthResponseDto> {
+    return this.authServices.googleValidateUser(req.user);
   }
 
   @Post('/logout')

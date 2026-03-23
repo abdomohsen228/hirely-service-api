@@ -11,10 +11,11 @@ import {
   Candidate,
   CandidateSchema,
 } from 'src/database/schemas/candidate.schema';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard],
+  providers: [AuthService, AuthGuard, GoogleStrategy],
   imports: [
     ConfigModule,
     MongooseModule.forFeature([
