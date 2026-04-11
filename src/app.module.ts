@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
+import { JobModule } from './modules/job/job.module';
 import { UploadModule } from './upload/upload.module';
 import { S3Module } from './s3/s3.module';
 import awsConfig from './config/aws.config';
@@ -44,6 +45,7 @@ import { BullModule } from '@nestjs/bullmq';
         },
       },
     }),
+    JobModule,
   ],
   controllers: [AppController],
   providers: [AppService],
