@@ -151,8 +151,9 @@ export class UploadService {
             throw new NotAcceptableException('Invalid image extension');
         }
 
-        await this.s3Service.deleteFile({ key, bucket: this.bucket });
-        // console.log(`Deleted old profile picture with key: ${key}`);
+        if (key) {
+            await this.s3Service.deleteFile({ key, bucket: this.bucket });
+        }
 
         return this.createProfilePictureUploadUrl({
             userId: params.userId,
@@ -179,7 +180,9 @@ export class UploadService {
             throw new NotAcceptableException('Invalid file extension');
         }
 
-        await this.s3Service.deleteFile({ key, bucket: this.bucket });
+        if (key) {
+            await this.s3Service.deleteFile({ key, bucket: this.bucket });
+        }
 
         return this.createCvUploadUrl({
             userId: params.userId,

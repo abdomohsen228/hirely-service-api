@@ -1,63 +1,85 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, HydratedDocument, Types } from 'mongoose';
+import {
+  Document,
+  HydratedDocument,
+  Schema as MongooseSchema,
+  Types,
+} from 'mongoose';
 import { profileStatus } from '../enums/user-profileStatus.enum';
 import { ExperienceLevel } from '../enums/experienceYears.enum';
 import { User } from './user.schema';
 
-export type CandidateDocument = HydratedDocument<Candidate>;
 
-@Schema({ _id: true })
-export class EducationEntry {
+
+/** Type for one embedded education row  */
+export type CandidateEducationEmbedded = {
   _id?: Types.ObjectId;
+  institution?: string;
+  degree?: string;
+  fieldOfStudy?: string;
+  startDate?: Date;
+  endDate?: Date;
+  description?: string;
+};
 
-  @Prop() institution?: string;
-
-  @Prop() degree?: string;
-
-  @Prop() fieldOfStudy?: string;
-
-  @Prop() startDate?: Date;
-
-  @Prop() endDate?: Date;
-
-  @Prop() description?: string;
-}
-export const EducationEntrySchema = SchemaFactory.createForClass(EducationEntry);
-
-@Schema({ _id: true })
-export class ExperienceEntry {
+/** Type for one embedded experience row  */
+export type CandidateExperienceEmbedded = {
   _id?: Types.ObjectId;
-
-  @Prop({ required: true })
   jobTitle: string;
-
-  @Prop({ required: true })
   companyName: string;
-
-  @Prop() location?: string;
-
-  @Prop() startDate?: Date;
-
-  @Prop() endDate?: Date;
-
-  @Prop() description?: string;
-
-  @Prop({ default: false })
+  location?: string;
+  startDate?: Date;
+  endDate?: Date;
+  description?: string;
   isCurrent?: boolean;
-}
-export const ExperienceEntrySchema = SchemaFactory.createForClass(ExperienceEntry);
+};
 
-@Schema({ _id: false })
-export class EqualEmployment {
-  @Prop() gender?: string;
+/** Embedded equal-employment object on Candidate */
+export type CandidateEqualEmploymentEmbedded = {
+  gender?: string;
+  raceOrEthnicity?: string;
+  veteranStatus?: string;
+  disabilityStatus?: string;
+};
 
-  @Prop() raceOrEthnicity?: string;
+const educationEmbeddedSchema = new MongooseSchema(
+  {
+    institution: { type: String },
+    degree: { type: String },
+    fieldOfStudy: { type: String },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    description: { type: String },
+  },
+  { _id: true },
+);
 
-  @Prop() veteranStatus?: string;
+const experienceEmbeddedSchema = new MongooseSchema(
+  {
+    jobTitle: { type: String, required: true },
+    companyName: { type: String, required: true },
+    location: { type: String },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    description: { type: String },
+    isCurrent: { type: Boolean, default: false },
+  },
+  { _id: true },
+);
 
-  @Prop() disabilityStatus?: string;
-}
-export const EqualEmploymentSchema = SchemaFactory.createForClass(EqualEmployment);
+const equalEmploymentEmbeddedSchema = new MongooseSchema(
+  {
+    gender: { type: String },
+    raceOrEthnicity: { type: String },
+    veteranStatus: { type: String },
+    disabilityStatus: { type: String },
+  },
+  { _id: false },
+);
+
+export type CandidateWithUser = Candidate & User;
+
+export type CandidateDocument = HydratedDocument<Candidate>;
 
 @Schema({ timestamps: true })
 export class Candidate extends Document {
@@ -86,14 +108,14 @@ export class Candidate extends Document {
   @Prop()
   education?: string;
 
-  @Prop({ type: [EducationEntrySchema], default: [] })
-  educations: EducationEntry[];
+  @Prop({ type: [educationEmbeddedSchema], default: [] })
+  educations: CandidateEducationEmbedded[];
 
-  @Prop({ type: [ExperienceEntrySchema], default: [] })
-  experiences: ExperienceEntry[];
+  @Prop({ type: [experienceEmbeddedSchema], default: [] })
+  experiences: CandidateExperienceEmbedded[];
 
-  @Prop({ type: EqualEmploymentSchema })
-  equalEmployment?: EqualEmployment;
+  @Prop({ type: equalEmploymentEmbeddedSchema })
+  equalEmployment?: CandidateEqualEmploymentEmbedded;
 
   @Prop({
     type: String,
