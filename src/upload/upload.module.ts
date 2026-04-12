@@ -9,5 +9,6 @@ import { UploadProcessor } from "src/queues/upload-queue/processor/upload.proces
     imports: [S3Module, AuthModule, UploadQueueModule],
     providers: [UploadService, UploadProcessor],
     controllers: [UploadController],
+    exports: [UploadService],
 })
 export class UploadModule {}
