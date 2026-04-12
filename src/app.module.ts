@@ -5,9 +5,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UploadModule } from './upload/upload.module';
-import { S3Module } from './s3/s3.module';
 import awsConfig from './config/aws.config';
 import { BullModule } from '@nestjs/bullmq';
+import { ProfileModule } from './modules/profile/profile.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -16,7 +16,7 @@ import { BullModule } from '@nestjs/bullmq';
       load: [awsConfig],
     }),
     MongooseModule.forRootAsync({
-      imports: [ConfigModule, AuthModule, UploadModule, S3Module],
+      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const dbUrl = configService.get<string>('DATABASE_URL');
@@ -26,6 +26,9 @@ import { BullModule } from '@nestjs/bullmq';
         return { uri: dbUrl };
       },
     }),
+    AuthModule,
+    UploadModule,
+    ProfileModule,
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST,
