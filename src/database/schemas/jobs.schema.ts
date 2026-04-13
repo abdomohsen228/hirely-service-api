@@ -1,7 +1,8 @@
-import { Prop, Schema } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { JobStatus } from '../enums/jobStatus.enum';
 import { ExperienceLevel } from '../enums/experienceYears.enum';
+import { JobType } from '../enums/jobType.enum';
 
 export type JobDocument = Job & Document;
 
@@ -11,44 +12,61 @@ export class Job extends Document {
   title: string;
 
   @Prop({ required: true })
-  description: string;
+  department: string;
 
-  @Prop({ required: true })
-  companyName: string;
+  @Prop({
+    type: String,
+    enum: JobType,
+    required: true,
+  })
+  jobType: JobType;
 
   @Prop({ required: true })
   location: string;
 
-  @Prop({ required: true })
-  createdBy: Types.ObjectId; // HR's ID
-
-  @Prop({ required: true })
-  jobType: string; // Full-time, Part-time, Contract, etc.
-
-  @Prop({ required: true })
-  department: string;
-
-  @Prop({ 
+  @Prop({
+    type: String,
+    enum: ExperienceLevel,
     required: true,
-    enum: ExperienceLevel, 
-    default: ExperienceLevel.JUNIOR,
   })
-  entryLevel: ExperienceLevel;
+  experienceLevel: ExperienceLevel;
 
-  @Prop({ 
-    required: true ,
+  @Prop({ required: true, min: 0 })
+  compensationMin: number;
+
+  @Prop({ required: true, min: 0 })
+  compensationMax: number;
+
+  @Prop({ required: true })
+  roleContext: string;
+
+  @Prop({ required: true })
+  coreResponsibilities: string;
+
+  @Prop({ type: [String], default: [] })
+  skills: string[];
+
+  @Prop({ type: [String], default: [] })
+  keywords: string[];
+
+  @Prop()
+  documentAttachment?: string;
+
+  @Prop({ required: true })
+  companyName: string;
+
+  @Prop({ required: true, type: Types.ObjectId, ref: 'User' })
+  createdBy: Types.ObjectId;
+
+  @Prop({
+    type: String,
     enum: JobStatus,
     default: JobStatus.OPEN,
   })
-  status: JobStatus; // Open, Closed, etc.
-
-  @Prop({ required: true })
-  evaluationCriteria: string; // What ??
-
-  @Prop({ required: true })
-  limit: number; // Number of candidates to hire for this job
+  status: JobStatus;
 
   @Prop({ default: 0 })
   applicationCount: number;
-
 }
+
+export const JobSchema = SchemaFactory.createForClass(Job);
