@@ -179,7 +179,12 @@ export class UpdateProfileRequestDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsUrl()
-  portfolioUrl?: string;
+  linkedInUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  githubUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

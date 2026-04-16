@@ -44,22 +44,28 @@ export class CompleteCandidateRegistrationResponseDto {
   currentJobTitle?: string;
 
   @ApiProperty({
-    example: 'https://api.hirely.com/uploads/userIds/uuid/profile.jpg',
+    example: 'profile_pictures/69deda35a0c2266fa53d9db4/9cec7a67-af62-475c-956d-99dd…',
     required: false,
   })
   profilePictureUrl?: string;
 
   @ApiProperty({
-    example: 'https://api.hirely.com/uploads/userIds/uuid/cv.pdf',
+    example: 'resumes/69deda35a0c2266fa53d9db4/9268f490-f8e8-4022-959c-52f86c4c2e39.…',
     required: false,
   })
   cvFileUrl?: string;
 
   @ApiProperty({
-    example: 'https://portfolio.com',
+    example: 'https://linkedin.com',
     required: false,
   })
-  portfolioUrl?: string;
+  linkedInUrl?: string;
+
+  @ApiProperty({
+    example: 'https://github.com',
+    required: false,
+  })
+  GitHubUrl?: string;
 
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -82,7 +88,8 @@ export class CompleteCandidateRegistrationResponseDto {
       currentJobTitle: candidate.currentJobTitle,
       profilePictureUrl: candidate.profilePictureUrl,
       cvFileUrl: candidate.cvFileUrl,
-      portfolioUrl: candidate.portfolioUrl,
+      linkedInUrl: candidate.linkedInUrl,
+      GitHubUrl: candidate.githubUrl,
       accessToken,
     };
   }

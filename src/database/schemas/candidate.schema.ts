@@ -146,7 +146,10 @@ export class Candidate extends Document {
   cvFileUrl: string;
 
   @Prop()
-  portfolioUrl: string;
+  linkedInUrl: string;
+
+  @Prop()
+  githubUrl: string;
 
   @Prop({
     type: String,

@@ -76,7 +76,8 @@ export class ProfileService {
       yearsOfExperience,
       languages,
       currentJobTitle,
-      portfolioUrl,
+      linkedInUrl,
+      githubUrl,
       mobileNumber,
       skills,
       educations,
@@ -92,7 +93,8 @@ export class ProfileService {
     if (yearsOfExperience !== undefined) candidate.yearsOfExperience = yearsOfExperience;
     if (languages !== undefined) candidate.languages = languages;
     if (currentJobTitle !== undefined) candidate.currentJobTitle = currentJobTitle;
-    if (portfolioUrl !== undefined) candidate.portfolioUrl = portfolioUrl;
+    if (linkedInUrl !== undefined) candidate.linkedInUrl = linkedInUrl;
+    if (githubUrl !== undefined) candidate.githubUrl = githubUrl;
     if (mobileNumber !== undefined) candidate.mobileNumber = mobileNumber;
 
     if (skills !== undefined) {
