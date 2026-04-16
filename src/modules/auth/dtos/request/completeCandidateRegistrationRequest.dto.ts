@@ -56,12 +56,11 @@ export class CompleteCandidateRegistrationRequestDto {
 
   @ApiProperty({
     example:
-      'https://your-bucket.s3.amazonaws.com/profile_pictures/userId/uuid.jpg',
+      'profile_pictures/69deda35a0c2266fa53d9db4/9cec7a67-af62-475c-956d-99dd',
     required: false,
     description: 'Profile picture public URL (already uploaded)',
   })
   @IsOptional()
-  @IsUrl()
   profilePictureUrl?: string;
 
   @ApiProperty({
@@ -90,19 +89,26 @@ export class CompleteCandidateRegistrationRequestDto {
   currentJobTitle?: string;
 
   @ApiProperty({
-    example: 'https://your-bucket.s3.amazonaws.com/resumes/userId/uuid.pdf',
+    example: 'resumes/69deda35a0c2266fa53d9db4/9cec7a67-af62-475c-956d-99dd',
     required: false,
     description: 'CV public URL (already uploaded)',
   })
   @IsOptional()
-  @IsUrl()
   cvFileUrl?: string;
 
   @ApiProperty({
-    example: 'https://portfolio.com',
+    example: 'https://linkedin.com/',
     required: false,
   })
   @IsOptional()
   @IsUrl()
-  portfolioUrl?: string;
+  linkedInUrl?: string;
+
+  @ApiProperty({
+    example: 'https://github.com/',
+    required: false,
+  })
+  @IsOptional()
+  @IsUrl()
+  githubUrl?: string;
 }
