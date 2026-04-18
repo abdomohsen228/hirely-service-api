@@ -49,6 +49,9 @@ export class Job extends Document {
   @Prop({ type: [String], default: [] })
   keywords: string[];
 
+  @Prop({ type: [String], default: [] })
+  interviewerQuestions: string[];
+
   @Prop()
   documentAttachment?: string;
 
