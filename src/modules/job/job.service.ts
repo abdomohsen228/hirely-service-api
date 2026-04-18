@@ -10,13 +10,14 @@ import { Hr, HrDocument } from 'src/database/schemas/hr.schema';
 import { UserRole } from 'src/database/enums/userRole.enum';
 import { CreateJobPostRequestDto } from './dtos/request/createJobPostRequest.dto';
 import { JobPostResponseDto } from './dtos/response/jobPostResponse.dto';
-import { UserDocument } from 'src/database/schemas/user.schema';
+import { User, UserDocument } from 'src/database/schemas/user.schema';
 
 @Injectable()
 export class JobService {
   constructor(
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
   public async createJobPost(
@@ -27,8 +28,18 @@ export class JobService {
       throw new ForbiddenException('Only HR users can create job posts');
     }
 
-    const hr = await this.hrModel.findOne({ email: user.email }).exec();
-    if (!hr) {
+    const userDoc = await this.userModel.findById(user._id).exec();
+    if (!userDoc?.email) {
+      throw new ForbiddenException(
+        'Complete HR registration before creating job posts',
+      );
+    }
+
+    const emailLocalPart = userDoc.email.split('@')[0];
+    const hrProfile = await this.hrModel
+      .findOne({ username: emailLocalPart })
+      .exec();
+    if (!hrProfile) {
       throw new ForbiddenException(
         'Complete HR registration before creating job posts',
       );
@@ -52,8 +63,9 @@ export class JobService {
       coreResponsibilities: dto.coreResponsibilities,
       skills: dto.skills,
       keywords: dto.keywords,
+      interviewerQuestions: dto.interviewerQuestions ?? [],
       documentAttachment: dto.documentAttachment,
-      companyName: hr.companyName,
+      companyName: hrProfile.companyName,
       createdBy: user._id,
     });
 
@@ -74,6 +86,7 @@ export class JobService {
       coreResponsibilities: doc.coreResponsibilities,
       skills: doc.skills ?? [],
       keywords: doc.keywords ?? [],
+      interviewerQuestions: doc.interviewerQuestions ?? [],
       documentAttachment: doc.documentAttachment,
       companyName: doc.companyName,
       createdBy: doc.createdBy.toString(),

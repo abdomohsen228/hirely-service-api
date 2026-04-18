@@ -40,6 +40,9 @@ export class JobPostResponseDto {
   @ApiProperty({ type: [String] })
   keywords: string[];
 
+  @ApiProperty({ type: [String] })
+  interviewerQuestions: string[];
+
   @ApiPropertyOptional()
   documentAttachment?: string;
 
