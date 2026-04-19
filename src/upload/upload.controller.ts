@@ -3,14 +3,14 @@ import { UploadService } from './upload.service';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guards';
 import { UseGuards } from '@nestjs/common';
 import { ImageUploadDto } from './dtos/imageUpload.dto';
-import { UploadProducer } from 'src/queues/upload-queue/producer/upload.producer';
+// import { UploadProducer } from 'src/queues/upload-queue/producer/upload.producer';
 
 @Controller('upload')
 export class UploadController {
   constructor(
     private readonly uploadService: UploadService,
-    private readonly uploadProducer: UploadProducer
-  ) { }
+    // private readonly uploadProducer: UploadProducer,
+  ) {}
 
   @Post('video')
   createVideoUpload(@Req() req: any, @Body() body: any) {
@@ -18,7 +18,7 @@ export class UploadController {
       userId: req.user?.id?.tostring(),
       fileName: body.fileName,
       contentType: body.contentType,
-      role: req.user.role
+      role: req.user.role,
     });
   }
 
@@ -28,7 +28,7 @@ export class UploadController {
     return this.uploadService.createProfilePictureUploadUrl({
       userId: req.user?.id?.toString(),
       fileName: body.fileName,
-      contentType: body.contentType
+      contentType: body.contentType,
     });
   }
 
@@ -38,7 +38,7 @@ export class UploadController {
     return this.uploadService.createCvUploadUrl({
       userId: req.user?.id?.toString(),
       fileName: body.fileName,
-      contentType: body.contentType
+      contentType: body.contentType,
     });
   }
 
@@ -60,7 +60,7 @@ export class UploadController {
     return this.uploadService.updateProfilePictureUrl({
       userId: req.user?.id?.toString(),
       fileName: body.fileName,
-      contentType: body.contentType
+      contentType: body.contentType,
     });
   }
 
@@ -70,7 +70,7 @@ export class UploadController {
     return this.uploadService.updateCvUrl({
       userId: req.user?.id?.toString(),
       fileName: body.fileName,
-      contentType: body.contentType
+      contentType: body.contentType,
     });
   }
 
@@ -85,7 +85,7 @@ export class UploadController {
   //     key: body.key,
   //     status: body.status,
   //     type: 'image',
-  //     reason: body.reason 
+  //     reason: body.reason
   //   });
   // }
 }
