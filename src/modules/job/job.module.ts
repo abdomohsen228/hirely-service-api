@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import {
+  JobApplication,
+  JobApplicationSchema,
+} from 'src/database/schemas/application.schema';
+import { Candidate, CandidateSchema } from 'src/database/schemas/candidate.schema';
 import { Job, JobSchema } from 'src/database/schemas/jobs.schema';
 import { Hr, HrSchema } from 'src/database/schemas/hr.schema';
 import { User, UserSchema } from 'src/database/schemas/user.schema';
@@ -11,6 +16,8 @@ import { JobService } from './job.service';
   imports: [
     AuthModule,
     MongooseModule.forFeature([
+      { name: JobApplication.name, schema: JobApplicationSchema },
+      { name: Candidate.name, schema: CandidateSchema },
       { name: Job.name, schema: JobSchema },
       { name: Hr.name, schema: HrSchema },
       { name: User.name, schema: UserSchema },
