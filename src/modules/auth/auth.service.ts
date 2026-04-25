@@ -97,7 +97,14 @@ export class AuthService {
     console.log('User profile picture status:', user.profilePictureStatus);
     console.log('User CV status:', user.cvStatus);
     
-    await this.waitForFileApproval(userId);
+    if(!dto.profilePictureUrl)
+    {
+      await this.waitForFileApproval(userId, false);
+    }
+    else{
+      await this.waitForFileApproval(userId);
+    }
+    
 
     const candidate = await this.candidateModel.create({
       ...dto,
@@ -123,7 +130,7 @@ export class AuthService {
     );
   }
 
-private async waitForFileApproval(userId: string) {
+private async waitForFileApproval(userId: string, profile: boolean = true) {
   const timeout = 15000; 
   const interval = 1000;
   const start = Date.now();
@@ -134,7 +141,7 @@ private async waitForFileApproval(userId: string) {
     if (!user) throw new NotFoundException('User not found');
 
     const { profilePictureStatus, cvStatus } = user;
-
+    
     if (profilePictureStatus === PictureCVStatus.REJECTED) {
       throw new BadRequestException(
         `Profile picture rejected: ${user.rejectionReason}`,
@@ -151,6 +158,10 @@ private async waitForFileApproval(userId: string) {
       profilePictureStatus === PictureCVStatus.APPROVED &&
       cvStatus === PictureCVStatus.APPROVED
     ) {
+      return user;
+    }
+
+    if(!profile && cvStatus === PictureCVStatus.APPROVED) {
       return user;
     }
 
