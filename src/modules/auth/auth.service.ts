@@ -154,18 +154,15 @@ private async waitForFileApproval(userId: string, profile: boolean = true) {
       );
     }
 
-      if (cvStatus === PictureCVStatus.REJECTED) {
-        throw new BadRequestException(`CV rejected: ${user.rejectionReason}`);
-      }
+    if (cvStatus === PictureCVStatus.REJECTED) {
+      throw new BadRequestException(`CV rejected: ${user.rejectionReason}`);
+    }
 
-      if (
-        profilePictureStatus === PictureCVStatus.APPROVED &&
-        cvStatus === PictureCVStatus.APPROVED
-      ) {
-        return user;
-      }
-
-      await new Promise((res) => setTimeout(res, interval));
+    if (
+      profilePictureStatus === PictureCVStatus.APPROVED &&
+      cvStatus === PictureCVStatus.APPROVED
+    ) {
+      return user;
     }
 
     if(!profile && cvStatus === PictureCVStatus.APPROVED) {
@@ -173,6 +170,7 @@ private async waitForFileApproval(userId: string, profile: boolean = true) {
     }
 
     await new Promise((res) => setTimeout(res, interval));
+  }
     throw new BadRequestException(
       'Files are still under review. Please try again in a few seconds.',
     );
