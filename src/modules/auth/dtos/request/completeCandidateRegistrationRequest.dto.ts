@@ -10,6 +10,7 @@ import {
   IsNumber,
   Min,
   MaxLength,
+  isNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
@@ -93,6 +94,7 @@ export class CompleteCandidateRegistrationRequestDto {
     required: false,
     description: 'CV public URL (already uploaded)',
   })
+  @IsNotEmpty()
   @IsOptional()
   cvFileUrl?: string;
 

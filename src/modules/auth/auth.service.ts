@@ -102,8 +102,15 @@ export class AuthService {
     }
     console.log('User profile picture status:', user.profilePictureStatus);
     console.log('User CV status:', user.cvStatus);
-
-    await this.waitForFileApproval(userId);
+    
+    if(!dto.profilePictureUrl)
+    {
+      await this.waitForFileApproval(userId, false);
+    }
+    else{
+      await this.waitForFileApproval(userId);
+    }
+    
 
     const candidate = await this.candidateModel.create({
       ...dto,
@@ -129,23 +136,23 @@ export class AuthService {
     );
   }
 
-  private async waitForFileApproval(userId: string) {
-    const timeout = 15000;
-    const interval = 1000;
-    const start = Date.now();
+private async waitForFileApproval(userId: string, profile: boolean = true) {
+  const timeout = 15000; 
+  const interval = 1000;
+  const start = Date.now();
 
     while (Date.now() - start < timeout) {
       const user = await this.userModel.findById(userId);
 
       if (!user) throw new NotFoundException('User not found');
 
-      const { profilePictureStatus, cvStatus } = user;
-
-      if (profilePictureStatus === PictureCVStatus.REJECTED) {
-        throw new BadRequestException(
-          `Profile picture rejected: ${user.rejectionReason}`,
-        );
-      }
+    const { profilePictureStatus, cvStatus } = user;
+    
+    if (profilePictureStatus === PictureCVStatus.REJECTED) {
+      throw new BadRequestException(
+        `Profile picture rejected: ${user.rejectionReason}`,
+      );
+    }
 
       if (cvStatus === PictureCVStatus.REJECTED) {
         throw new BadRequestException(`CV rejected: ${user.rejectionReason}`);
@@ -161,6 +168,11 @@ export class AuthService {
       await new Promise((res) => setTimeout(res, interval));
     }
 
+    if(!profile && cvStatus === PictureCVStatus.APPROVED) {
+      return user;
+    }
+
+    await new Promise((res) => setTimeout(res, interval));
     throw new BadRequestException(
       'Files are still under review. Please try again in a few seconds.',
     );

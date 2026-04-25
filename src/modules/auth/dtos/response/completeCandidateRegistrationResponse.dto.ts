@@ -51,7 +51,7 @@ export class CompleteCandidateRegistrationResponseDto {
 
   @ApiProperty({
     example: 'resumes/69deda35a0c2266fa53d9db4/9268f490-f8e8-4022-959c-52f86c4c2e39.…',
-    required: false,
+    required: true,
   })
   cvFileUrl?: string;
 
