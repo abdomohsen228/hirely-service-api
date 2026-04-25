@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsEnum,
@@ -32,40 +33,43 @@ export class CreateJobPostRequestDto {
 
   @ApiProperty({ example: 'Remote — MENA' })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(200)
-  location: string;
+  location?: string;
 
   @ApiProperty({ enum: ExperienceLevel, example: ExperienceLevel.MID_LEVEL })
   @IsEnum(ExperienceLevel)
-  experienceLevel: ExperienceLevel;
+  @IsOptional()
+  experienceLevel?: ExperienceLevel;
 
   @ApiProperty({ example: 8000 })
   @IsNumber()
   @Min(0)
+  @IsOptional()
   compensationMin: number;
 
   @ApiProperty({ example: 12000 })
   @IsNumber()
   @Min(0)
-  compensationMax: number;
+  @IsOptional()
+  compensationMax?: number;
 
   @ApiProperty({
     example: 'You will own backend services for our hiring platform.',
   })
   @IsString()
-  @IsNotEmpty()
   @MaxLength(5000)
-  roleContext: string;
+  @IsOptional()
+  roleContext?: string;
 
   @ApiProperty({
     example:
       'Design APIs, review code, mentor juniors, and improve reliability.',
   })
   @IsString()
-  @IsNotEmpty()
   @MaxLength(8000)
-  coreResponsibilities: string;
+  @IsOptional()
+  coreResponsibilities?: string;
 
   @ApiProperty({
     example: ['NestJS', 'MongoDB', 'TypeScript'],
@@ -75,7 +79,8 @@ export class CreateJobPostRequestDto {
   @ArrayMinSize(1)
   @IsString({ each: true })
   @MaxLength(80, { each: true })
-  skills: string[];
+  @IsOptional()
+  skills?: string[];
 
   @ApiProperty({
     example: ['fintech', 'remote', 'backend'],
@@ -85,7 +90,24 @@ export class CreateJobPostRequestDto {
   @ArrayMinSize(1)
   @IsString({ each: true })
   @MaxLength(80, { each: true })
-  keywords: string[];
+  @IsOptional()
+  keywords?: string[];
+
+  @ApiPropertyOptional({
+    example: [
+      'Describe a time you owned a production incident end-to-end.',
+      'How do you approach API versioning with mobile clients?',
+    ],
+    type: [String],
+    description:
+      'Questions HR expects interviewers to ask candidates for this role',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsString({ each: true })
+  @MaxLength(1000, { each: true })
+  interviewerQuestions?: string[];
 
   @ApiPropertyOptional({
     example: 'https://cdn.example.com/jobs/brief.pdf',
@@ -94,5 +116,6 @@ export class CreateJobPostRequestDto {
   @IsOptional()
   @IsString()
   @MaxLength(2000)
+  @IsOptional()
   documentAttachment?: string;
 }
