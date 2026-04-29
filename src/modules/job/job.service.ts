@@ -72,10 +72,14 @@ export class JobService {
     return new Types.ObjectId(id);
   }
 
-  private async getCandidateForUser(user: UserDocument): Promise<CandidateDocument> {
+  private async getCandidateForUser(
+    user: UserDocument,
+  ): Promise<CandidateDocument> {
     this.assertCandidateUser(user);
 
-    let candidate = await this.candidateModel.findOne({ user: user._id }).exec();
+    let candidate = await this.candidateModel
+      .findOne({ user: user._id })
+      .exec();
     if (!candidate) {
       const legacyUsername = user.email.split('@')[0];
       candidate = await this.candidateModel
@@ -105,12 +109,7 @@ export class JobService {
     return candidate;
   }
 
-  public async createJobPost(
-    user: UserDocument,
-    dto: CreateJobPostRequestDto,
-  ): Promise<JobPostResponseDto> {
-    this.assertHrUser(user);
-
+  private async getHrProfileForUser(user: UserDocument): Promise<HrDocument> {
     const userDoc = await this.userModel.findById(user._id).exec();
     if (!userDoc?.email) {
       throw new ForbiddenException(
@@ -127,6 +126,16 @@ export class JobService {
         'Complete HR registration before creating job posts',
       );
     }
+
+    return hrProfile;
+  }
+
+  public async createJobPost(
+    user: UserDocument,
+    dto: CreateJobPostRequestDto,
+  ): Promise<JobPostResponseDto> {
+    this.assertHrUser(user);
+    const hrProfile = await this.getHrProfileForUser(user);
 
     if (dto.compensationMax < dto.compensationMin) {
       throw new BadRequestException(
@@ -149,10 +158,11 @@ export class JobService {
       interviewerQuestions: dto.interviewerQuestions ?? [],
       documentAttachment: dto.documentAttachment,
       companyName: hrProfile.companyName,
+      hr: hrProfile._id,
       createdBy: user._id,
     });
 
-    return this.toResponse(created);
+    return this.toResponse(created, hrProfile);
   }
 
   public async listJobPosts(
@@ -210,7 +220,8 @@ export class JobService {
     if (!doc) {
       throw new NotFoundException('Job not found');
     }
-    return this.toResponse(doc);
+    const hrProfile = doc.hr ? await this.hrModel.findById(doc.hr).exec() : null;
+    return this.toResponse(doc, hrProfile);
   }
 
   public async listMyApplications(
@@ -241,7 +252,9 @@ export class JobService {
       new Set(applications.map((application) => application.jobId.toString())),
     ).map((value) => new Types.ObjectId(value));
 
-    const jobs = await this.jobModel.find({ _id: { $in: uniqueJobIds } }).exec();
+    const jobs = await this.jobModel
+      .find({ _id: { $in: uniqueJobIds } })
+      .exec();
     const jobsById = new Map(jobs.map((job) => [job._id.toString(), job]));
 
     const items: MyJobApplicationItemResponseDto[] = applications.map(
@@ -418,9 +431,7 @@ export class JobService {
         dto.nextStepTitle === null ? undefined : dto.nextStepTitle;
     }
     if (dto.nextStepAt !== undefined) {
-      application.nextStepAt = dto.nextStepAt
-        ? new Date(dto.nextStepAt)
-        : null;
+      application.nextStepAt = dto.nextStepAt ? new Date(dto.nextStepAt) : null;
     }
     if (dto.matchScore !== undefined) {
       application.matchScore =
@@ -506,7 +517,10 @@ export class JobService {
     }
   }
 
-  private toResponse(doc: JobDocument): JobPostResponseDto {
+  private toResponse(
+    doc: JobDocument,
+    hrProfile?: HrDocument | null,
+  ): JobPostResponseDto {
     return {
       id: doc._id.toString(),
       title: doc.title,
@@ -518,6 +532,9 @@ export class JobService {
       compensationMax: doc.compensationMax,
       roleContext: doc.roleContext,
       coreResponsibilities: doc.coreResponsibilities,
+      companySummary: hrProfile?.companySummary ?? null,
+      companySize: hrProfile?.companySize ?? null,
+      hrName: hrProfile?.fullName ?? null,
       skills: doc.skills ?? [],
       keywords: doc.keywords ?? [],
       interviewerQuestions: doc.interviewerQuestions ?? [],
@@ -544,8 +561,7 @@ export class JobService {
   private toApplicationResponse(
     doc: JobApplicationDocument,
   ): JobApplicationResponseDto {
-    const totalStages =
-      doc.totalStages ?? this.defaultApplicationTotalStages;
+    const totalStages = doc.totalStages ?? this.defaultApplicationTotalStages;
     const currentStage = doc.currentStage ?? 1;
 
     return {

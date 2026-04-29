@@ -58,6 +58,9 @@ export class Job extends Document {
   @Prop({ required: true })
   companyName: string;
 
+  @Prop({ required: true, type: Types.ObjectId, ref: 'Hr' })
+  hr: Types.ObjectId;
+
   @Prop({ required: true, type: Types.ObjectId, ref: 'User' })
   createdBy: Types.ObjectId;
 
