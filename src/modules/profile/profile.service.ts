@@ -12,19 +12,21 @@ import {
   CandidateEducationEmbedded,
   CandidateExperienceEmbedded,
 } from 'src/database/schemas/candidate.schema';
+import { Hr, HrDocument } from 'src/database/schemas/hr.schema';
 import { UserDocument } from 'src/database/schemas/user.schema';
 import { UploadService } from 'src/upload/upload.service';
 import { createValidatedResponse } from './dtos/create-validated-response';
 import { UpdateProfileRequestDto } from './dtos/request/updateProfile.request.dto';
 import { UpdateProfilePhotoRequestDto } from './dtos/request/updateProfilePhoto.request.dto';
 import { PresignedUploadResponseDto } from './dtos/response/presignedUpload.response.dto';
-import { buildProfileResponse } from './profile.mapper';
+import { buildHrProfileResponse, buildProfileResponse } from './profile.mapper';
 
 @Injectable()
 export class ProfileService {
   constructor(
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
+    @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     private readonly uploadService: UploadService,
   ) {}
 
@@ -32,6 +34,24 @@ export class ProfileService {
     if (user.role !== UserRole.CANDIDATE) {
       throw new ForbiddenException('Only candidates can access this profile');
     }
+  }
+
+  private ensureHrRole(user: UserDocument): void {
+    if (user.role !== UserRole.HR) {
+      throw new ForbiddenException('Only HR can access this profile');
+    }
+  }
+
+  private async getHrForUser(user: UserDocument): Promise<HrDocument> {
+    this.ensureHrRole(user);
+    const emailPrefix = user.email.split('@')[0];
+    const hr = await this.hrModel.findOne({ username: emailPrefix });
+    if (!hr) {
+      throw new NotFoundException(
+        'HR profile not found. Complete registration first.',
+      );
+    }
+    return hr;
   }
 
   private async getCandidateForUser(user: UserDocument): Promise<CandidateDocument> {
@@ -63,6 +83,11 @@ export class ProfileService {
   async getProfile(user: UserDocument) {
     const candidate = await this.getCandidateForUser(user);
     return buildProfileResponse(user, candidate);
+  }
+
+  async getHrProfile(user: UserDocument) {
+    const hr = await this.getHrForUser(user);
+    return buildHrProfileResponse(user, hr);
   }
 
   async updateProfile(user: UserDocument, dto: UpdateProfileRequestDto) {
