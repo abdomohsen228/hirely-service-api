@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
 import { JobType } from 'src/database/enums/jobType.enum';
 import { JobStatus } from 'src/database/enums/jobStatus.enum';
+import { CompanySize } from 'src/database/enums/companySize.enum';
 
 export class JobPostResponseDto {
   @ApiProperty()
@@ -33,6 +34,15 @@ export class JobPostResponseDto {
 
   @ApiProperty()
   coreResponsibilities: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  companySummary: string | null;
+
+  @ApiPropertyOptional({ enum: CompanySize, nullable: true })
+  companySize: CompanySize | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  hrName: string | null;
 
   @ApiProperty({ type: [String] })
   skills: string[];

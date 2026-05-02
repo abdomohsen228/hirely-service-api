@@ -36,7 +36,7 @@ export class AuthService {
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
-  ) { }
+  ) {}
 
   public async register(
     registerRequestDto: RegisterRequestDto,
@@ -94,10 +94,23 @@ export class AuthService {
     if (existingCandidate) {
       throw new BadRequestException('Data already completed for this user');
     }
+    const isPhoneNumberTaken = await this.candidateModel.findOne({
+      phoneNumber: dto.mobileNumber,
+    });
+    if (isPhoneNumberTaken) {
+      throw new BadRequestException('Phone number already in use');
+    }
     console.log('User profile picture status:', user.profilePictureStatus);
     console.log('User CV status:', user.cvStatus);
     
-    await this.waitForFileApproval(userId);
+    if(!dto.profilePictureUrl)
+    {
+      await this.waitForFileApproval(userId, false);
+    }
+    else{
+      await this.waitForFileApproval(userId);
+    }
+    
 
     const candidate = await this.candidateModel.create({
       ...dto,
@@ -123,18 +136,18 @@ export class AuthService {
     );
   }
 
-private async waitForFileApproval(userId: string) {
+private async waitForFileApproval(userId: string, profile: boolean = true) {
   const timeout = 15000; 
   const interval = 1000;
   const start = Date.now();
 
-  while (Date.now() - start < timeout) {
-    const user = await this.userModel.findById(userId);
+    while (Date.now() - start < timeout) {
+      const user = await this.userModel.findById(userId);
 
-    if (!user) throw new NotFoundException('User not found');
+      if (!user) throw new NotFoundException('User not found');
 
     const { profilePictureStatus, cvStatus } = user;
-
+    
     if (profilePictureStatus === PictureCVStatus.REJECTED) {
       throw new BadRequestException(
         `Profile picture rejected: ${user.rejectionReason}`,
@@ -142,9 +155,7 @@ private async waitForFileApproval(userId: string) {
     }
 
     if (cvStatus === PictureCVStatus.REJECTED) {
-      throw new BadRequestException(
-        `CV rejected: ${user.rejectionReason}`,
-      );
+      throw new BadRequestException(`CV rejected: ${user.rejectionReason}`);
     }
 
     if (
@@ -154,13 +165,16 @@ private async waitForFileApproval(userId: string) {
       return user;
     }
 
+    if(!profile && cvStatus === PictureCVStatus.APPROVED) {
+      return user;
+    }
+
     await new Promise((res) => setTimeout(res, interval));
   }
-
-  throw new BadRequestException(
-    'Files are still under review. Please try again in a few seconds.',
-  );
-}
+    throw new BadRequestException(
+      'Files are still under review. Please try again in a few seconds.',
+    );
+  }
 
   public async completeHrData(
     userId: string,
@@ -173,6 +187,13 @@ private async waitForFileApproval(userId: string) {
       throw new ForbiddenException('Only HR users allowed');
 
     const emailPrefix = user.email.split('@')[0];
+
+    const isPhoneNumberTaken = await this.hrModel.findOne({
+      phoneNumber: dto.phoneNumber,
+    });
+    if (isPhoneNumberTaken) {
+      throw new BadRequestException('Phone number already in use');
+    }
 
     const hr = await this.hrModel.create({
       ...dto,

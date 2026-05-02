@@ -44,10 +44,10 @@ export class ProfileResponseDto {
   @IsEnum(PictureCVStatus)
   profilePictureStatus?: PictureCVStatus;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  cvUrl?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // cvUrl?: string;
 
   @ApiPropertyOptional({ enum: PictureCVStatus })
   @IsOptional()
@@ -70,10 +70,10 @@ export class ProfileResponseDto {
   @IsString()
   country: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  education?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // education?: string;
 
   @ApiProperty({ type: [EducationEntryResponseDto] })
   @IsArray()
@@ -114,11 +114,11 @@ export class ProfileResponseDto {
   @MaxLength(1000)
   profileSummary?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000)
-  bio?: string;
+  // @ApiPropertyOptional()
+  // @IsOptional()
+  // @IsString()
+  // @MaxLength(1000)
+  // bio?: string;
 
   @ApiProperty({ type: [String] })
   @IsArray()
@@ -132,7 +132,6 @@ export class ProfileResponseDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUrl()
   cvFileUrl?: string;
 
   @ApiPropertyOptional()
