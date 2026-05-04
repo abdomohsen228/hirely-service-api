@@ -4,9 +4,15 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
-import { UserJobScore, UserJobScoreDocument } from 'src/database/schemas/user_job_score.schema';
+import {
+  UserJobScore,
+  UserJobScoreDocument,
+} from 'src/database/schemas/user_job_score.schema';
 import { Job, JobDocument } from 'src/database/schemas/jobs.schema';
-import { Candidate, CandidateDocument } from 'src/database/schemas/candidate.schema';
+import {
+  Candidate,
+  CandidateDocument,
+} from 'src/database/schemas/candidate.schema';
 
 @Injectable()
 export class AiMatchingService {
@@ -23,7 +29,9 @@ export class AiMatchingService {
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
   ) {
-    this.aiServiceUrl = this.configService.get<string>('AI_SERVICE_URL') || 'http://localhost:8000';
+    this.aiServiceUrl =
+      this.configService.get<string>('AI_SERVICE_URL') ||
+      'http://localhost:8000';
   }
 
   /**
@@ -32,7 +40,9 @@ export class AiMatchingService {
   async computeScoresForCandidate(candidate: CandidateDocument): Promise<void> {
     const cvUrl = candidate.cvFileUrl;
     if (!cvUrl) {
-      this.logger.warn(`Candidate ${candidate._id} has no CV URL. Skipping matching.`);
+      this.logger.warn(
+        `Candidate ${candidate._id} has no CV URL. Skipping matching.`,
+      );
       return;
     }
 
@@ -71,7 +81,9 @@ export class AiMatchingService {
       }
       this.logger.log(`Updated scores for candidate ${candidate._id}`);
     } catch (error) {
-      this.logger.error(`Failed to call AI service for candidate ${candidate._id}: ${error.message}`);
+      this.logger.error(
+        `Failed to call AI service for candidate ${candidate._id}: ${error.message}`,
+      );
     }
   }
 
@@ -79,8 +91,10 @@ export class AiMatchingService {
    * Triggers matching for a new job against all available candidates.
    */
   async computeScoresForJob(job: JobDocument): Promise<void> {
-    const candidates = await this.candidateModel.find({ cvFileUrl: { $exists: true, $ne: null } }).exec();
-    
+    const candidates = await this.candidateModel
+      .find({ cvFileUrl: { $exists: true, $ne: null } })
+      .exec();
+
     for (const candidate of candidates) {
       // In a real scenario, we might want to batch this or send only this job to the AI service
       // But the requirement says: "Send CV + this job (or jobs list) to AI"
@@ -115,7 +129,9 @@ export class AiMatchingService {
           );
         }
       } catch (error) {
-        this.logger.error(`Failed to call AI service for candidate ${candidate._id} on new job ${job._id}: ${error.message}`);
+        this.logger.error(
+          `Failed to call AI service for candidate ${candidate._id} on new job ${job._id}: ${error.message}`,
+        );
       }
     }
     this.logger.log(`Updated scores for all candidates for new job ${job._id}`);

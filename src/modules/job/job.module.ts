@@ -4,11 +4,17 @@ import {
   JobApplication,
   JobApplicationSchema,
 } from 'src/database/schemas/application.schema';
-import { Candidate, CandidateSchema } from 'src/database/schemas/candidate.schema';
+import {
+  Candidate,
+  CandidateSchema,
+} from 'src/database/schemas/candidate.schema';
 import { Job, JobSchema } from 'src/database/schemas/jobs.schema';
 import { Hr, HrSchema } from 'src/database/schemas/hr.schema';
 import { User, UserSchema } from 'src/database/schemas/user.schema';
-import { UserJobScore, UserJobScoreSchema } from 'src/database/schemas/user_job_score.schema';
+import {
+  UserJobScore,
+  UserJobScoreSchema,
+} from 'src/database/schemas/user_job_score.schema';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { AiMatchingModule } from 'src/modules/ai-matching/ai-matching.module';
 import { JobController } from './job.controller';

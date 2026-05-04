@@ -28,7 +28,10 @@ import { CompleteHrRegistrationResponseDto } from './dtos/response/completeHrReg
 import { AuthProvider } from 'src/database/enums/authProvider.enum';
 import { GoogleAuthResponseDto } from './dtos/response/googleAuthResponse.dto';
 import { PictureCVStatus } from 'src/database/enums/pictureCVstatus.enum';
-import { UserJobScore, UserJobScoreDocument } from 'src/database/schemas/user_job_score.schema';
+import {
+  UserJobScore,
+  UserJobScoreDocument,
+} from 'src/database/schemas/user_job_score.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
 @Injectable()
 export class AuthService {
@@ -38,9 +41,10 @@ export class AuthService {
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
-    @InjectModel(UserJobScore.name) private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    @InjectModel(UserJobScore.name)
+    private readonly userJobScoreModel: Model<UserJobScoreDocument>,
     private readonly aiMatchingService: AiMatchingService,
-  ) { }
+  ) {}
 
   public async register(
     registerRequestDto: RegisterRequestDto,
@@ -109,11 +113,9 @@ export class AuthService {
 
     if (!dto.profilePictureUrl) {
       await this.waitForFileApproval(userId, false);
-    }
-    else {
+    } else {
       await this.waitForFileApproval(userId);
     }
-
 
     const candidate = await this.candidateModel.create({
       ...dto,

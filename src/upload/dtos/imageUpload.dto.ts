@@ -1,12 +1,11 @@
-import { IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class ImageUploadDto {
-    @IsString()
-    @IsNotEmpty()
-    fileName: string;
+  @IsString()
+  @IsNotEmpty()
+  fileName: string;
 
-    @IsString()
-    @IsNotEmpty()
-    contentType: string;
-
+  @IsString()
+  @IsNotEmpty()
+  contentType: string;
 }

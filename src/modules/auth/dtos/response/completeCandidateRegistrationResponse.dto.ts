@@ -44,13 +44,15 @@ export class CompleteCandidateRegistrationResponseDto {
   currentJobTitle?: string;
 
   @ApiProperty({
-    example: 'profile_pictures/69deda35a0c2266fa53d9db4/9cec7a67-af62-475c-956d-99dd…',
+    example:
+      'profile_pictures/69deda35a0c2266fa53d9db4/9cec7a67-af62-475c-956d-99dd…',
     required: false,
   })
   profilePictureUrl?: string;
 
   @ApiProperty({
-    example: 'resumes/69deda35a0c2266fa53d9db4/9268f490-f8e8-4022-959c-52f86c4c2e39.…',
+    example:
+      'resumes/69deda35a0c2266fa53d9db4/9268f490-f8e8-4022-959c-52f86c4c2e39.…',
     required: true,
   })
   cvFileUrl?: string;

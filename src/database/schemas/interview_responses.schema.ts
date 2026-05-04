@@ -18,5 +18,4 @@ export class InterviewResponse extends Document {
 
   @Prop({ required: true })
   responseDuration: number; // Duration in seconds that the candidate took to answer the question
-
 }

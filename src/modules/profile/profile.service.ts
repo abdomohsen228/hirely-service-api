@@ -54,12 +54,16 @@ export class ProfileService {
     return hr;
   }
 
-  private async getCandidateForUser(user: UserDocument): Promise<CandidateDocument> {
+  private async getCandidateForUser(
+    user: UserDocument,
+  ): Promise<CandidateDocument> {
     this.ensureCandidateRole(user);
     let candidate = await this.candidateModel.findOne({ user: user._id });
     if (!candidate) {
       const legacyUsername = user.email.split('@')[0];
-      candidate = await this.candidateModel.findOne({ username: legacyUsername });
+      candidate = await this.candidateModel.findOne({
+        username: legacyUsername,
+      });
       if (candidate) {
         if (candidate.user && !candidate.user.equals(user._id)) {
           throw new ForbiddenException(
@@ -113,11 +117,15 @@ export class ProfileService {
     if (fullName !== undefined) candidate.fullName = fullName;
     if (country !== undefined) candidate.country = country;
     if (bio !== undefined) candidate.profileSummary = bio;
-    else if (profileSummary !== undefined) candidate.profileSummary = profileSummary;
-    if (experienceLevel !== undefined) candidate.experienceLevel = experienceLevel;
-    if (yearsOfExperience !== undefined) candidate.yearsOfExperience = yearsOfExperience;
+    else if (profileSummary !== undefined)
+      candidate.profileSummary = profileSummary;
+    if (experienceLevel !== undefined)
+      candidate.experienceLevel = experienceLevel;
+    if (yearsOfExperience !== undefined)
+      candidate.yearsOfExperience = yearsOfExperience;
     if (languages !== undefined) candidate.languages = languages;
-    if (currentJobTitle !== undefined) candidate.currentJobTitle = currentJobTitle;
+    if (currentJobTitle !== undefined)
+      candidate.currentJobTitle = currentJobTitle;
     if (linkedInUrl !== undefined) candidate.linkedInUrl = linkedInUrl;
     if (githubUrl !== undefined) candidate.githubUrl = githubUrl;
     if (mobileNumber !== undefined) candidate.mobileNumber = mobileNumber;
@@ -173,7 +181,10 @@ export class ProfileService {
     return buildProfileResponse(user, candidate);
   }
 
-  async updateProfilePhoto(user: UserDocument, body: UpdateProfilePhotoRequestDto) {
+  async updateProfilePhoto(
+    user: UserDocument,
+    body: UpdateProfilePhotoRequestDto,
+  ) {
     this.ensureCandidateRole(user);
     const raw = await this.uploadService.updateProfilePictureUrl({
       userId: user.id,

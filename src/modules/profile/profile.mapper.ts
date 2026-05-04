@@ -76,8 +76,7 @@ export function buildProfileResponse(
     createdAt?: unknown;
     updatedAt?: unknown;
   };
-  const createdAt =
-    toIso(withTimestamps.createdAt) ?? new Date().toISOString();
+  const createdAt = toIso(withTimestamps.createdAt) ?? new Date().toISOString();
   const updatedAt = toIso(withTimestamps.updatedAt) ?? createdAt;
 
   return createValidatedResponse(ProfileResponseDto, {
@@ -121,8 +120,7 @@ export function buildHrProfileResponse(
     createdAt?: unknown;
     updatedAt?: unknown;
   };
-  const createdAt =
-    toIso(withTimestamps.createdAt) ?? new Date().toISOString();
+  const createdAt = toIso(withTimestamps.createdAt) ?? new Date().toISOString();
   const updatedAt = toIso(withTimestamps.updatedAt) ?? createdAt;
 
   return createValidatedResponse(HrProfileResponseDto, {

@@ -20,7 +20,8 @@ import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
 /** One education row inside `PATCH /profile` — replaces entire `educations` when the array is sent. */
 export class ProfileEducationItemRequestDto {
   @ApiPropertyOptional({
-    description: 'Existing Mongo subdocument id; omit to create a new id on save',
+    description:
+      'Existing Mongo subdocument id; omit to create a new id on save',
   })
   @IsOptional()
   @IsMongoId()
@@ -61,7 +62,8 @@ export class ProfileEducationItemRequestDto {
 /** One experience row — replaces entire `experiences` when the array is sent. */
 export class ProfileExperienceItemRequestDto {
   @ApiPropertyOptional({
-    description: 'Existing Mongo subdocument id; omit to create a new id on save',
+    description:
+      'Existing Mongo subdocument id; omit to create a new id on save',
   })
   @IsOptional()
   @IsMongoId()
@@ -191,7 +193,10 @@ export class UpdateProfileRequestDto {
   @IsString()
   mobileNumber?: string;
 
-  @ApiPropertyOptional({ type: [String], description: 'Replaces full skills list when sent' })
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Replaces full skills list when sent',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -199,7 +204,8 @@ export class UpdateProfileRequestDto {
 
   @ApiPropertyOptional({
     type: [ProfileEducationItemRequestDto],
-    description: 'Replaces full educations list when sent (embedded subdocuments)',
+    description:
+      'Replaces full educations list when sent (embedded subdocuments)',
   })
   @IsOptional()
   @IsArray()
@@ -209,7 +215,8 @@ export class UpdateProfileRequestDto {
 
   @ApiPropertyOptional({
     type: [ProfileExperienceItemRequestDto],
-    description: 'Replaces full experiences list when sent (embedded subdocuments)',
+    description:
+      'Replaces full experiences list when sent (embedded subdocuments)',
   })
   @IsOptional()
   @IsArray()

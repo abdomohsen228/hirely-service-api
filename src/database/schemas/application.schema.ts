@@ -48,4 +48,5 @@ export class JobApplication extends Document {
   feedbackSummary?: string;
 }
 
-export const JobApplicationSchema = SchemaFactory.createForClass(JobApplication);
+export const JobApplicationSchema =
+  SchemaFactory.createForClass(JobApplication);
