@@ -1,9 +1,11 @@
 import { CandidateDocument } from 'src/database/schemas/candidate.schema';
+import { HrDocument } from 'src/database/schemas/hr.schema';
 import { UserDocument } from 'src/database/schemas/user.schema';
 import { createValidatedResponse } from './dtos/create-validated-response';
 import { EducationEntryResponseDto } from './dtos/response/educationEntry.response.dto';
 import { EqualEmploymentDataResponseDto } from './dtos/response/equalEmploymentData.response.dto';
 import { ExperienceEntryResponseDto } from './dtos/response/experienceEntry.response.dto';
+import { HrProfileResponseDto } from './dtos/response/hrProfile.response.dto';
 import { ProfileResponseDto } from './dtos/response/profile.response.dto';
 
 function toIso(d: unknown): string | undefined {
@@ -105,6 +107,43 @@ export function buildProfileResponse(
     linkedInUrl: c.linkedInUrl,
     githubUrl: c.githubUrl,
     profileStatus: c.profileStatus,
+    createdAt,
+    updatedAt,
+  });
+}
+
+export function buildHrProfileResponse(
+  user: UserDocument,
+  hr: HrDocument,
+): HrProfileResponseDto {
+  const h = hr.toObject();
+  const withTimestamps = h as unknown as {
+    createdAt?: unknown;
+    updatedAt?: unknown;
+  };
+  const createdAt =
+    toIso(withTimestamps.createdAt) ?? new Date().toISOString();
+  const updatedAt = toIso(withTimestamps.updatedAt) ?? createdAt;
+
+  return createValidatedResponse(HrProfileResponseDto, {
+    id: hr._id.toString(),
+    userId: user.id,
+    email: user.email,
+    isProfileCompleted: user.isProfileCompleted,
+    profilePictureUrl: user.profilePictureUrl,
+    profilePictureStatus: user.profilePictureStatus,
+    fullName: h.fullName,
+    username: h.username,
+    phoneNumber: h.phoneNumber,
+    companyName: h.companyName,
+    companyWebsite: h.companyWebsite,
+    companySummary: h.companySummary,
+    companySize: h.companySize,
+    companyIndustry: h.companyIndustry,
+    jobTitle: h.jobTitle,
+    accountStatus: h.accountStatus,
+    emailVerified: h.emailVerified ?? false,
+    lastLogin: toIso(h.lastLogin),
     createdAt,
     updatedAt,
   });

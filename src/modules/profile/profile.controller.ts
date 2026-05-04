@@ -11,6 +11,7 @@ import { UserDocument } from 'src/database/schemas/user.schema';
 import { ProfileService } from './profile.service';
 import { UpdateProfileRequestDto } from './dtos/request/updateProfile.request.dto';
 import { UpdateProfilePhotoRequestDto } from './dtos/request/updateProfilePhoto.request.dto';
+import { HrProfileResponseDto } from './dtos/response/hrProfile.response.dto';
 import { ProfileResponseDto } from './dtos/response/profile.response.dto';
 import { PresignedUploadResponseDto } from './dtos/response/presignedUpload.response.dto';
 
@@ -20,6 +21,13 @@ import { PresignedUploadResponseDto } from './dtos/response/presignedUpload.resp
 @Controller('profile')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
+
+  @Get('hr')
+  @ApiOperation({ summary: 'Get current HR profile' })
+  @ApiResponse({ status: HttpStatus.OK, type: HrProfileResponseDto })
+  getHrProfile(@CurrentUser() user: UserDocument) {
+    return this.profileService.getHrProfile(user);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get current candidate profile' })
