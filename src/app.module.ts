@@ -9,6 +9,7 @@ import { UploadModule } from './upload/upload.module';
 import awsConfig from './config/aws.config';
 // import { BullModule } from '@nestjs/bullmq';
 import { ProfileModule } from './modules/profile/profile.module';
+import { AiMatchingModule } from './modules/ai-matching/ai-matching.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +50,7 @@ import { ProfileModule } from './modules/profile/profile.module';
     //   },
     // }),
     JobModule,
+    AiMatchingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

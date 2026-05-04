@@ -30,7 +30,10 @@ import { MyApplicationsStatsResponseDto } from './dtos/response/myApplicationsSt
 import { MyJobApplicationItemResponseDto } from './dtos/response/myJobApplicationItemResponse.dto';
 import { PaginatedJobListResponseDto } from './dtos/response/paginatedJobListResponse.dto';
 import { PaginatedMyJobApplicationsResponseDto } from './dtos/response/paginatedMyJobApplicationsResponse.dto';
+import { UserJobScore, UserJobScoreDocument } from 'src/database/schemas/user_job_score.schema';
+import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
+import { AiMatchingService } from '../ai-matching/ai-matching.service';
 
 @Injectable()
 export class JobService {
@@ -44,6 +47,8 @@ export class JobService {
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(UserJobScore.name) private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    private readonly aiMatchingService: AiMatchingService,
   ) {}
 
   private assertHrUser(user: UserDocument): void {
@@ -162,6 +167,11 @@ export class JobService {
       createdBy: user._id,
     });
 
+    // Trigger AI matching for all candidates
+    this.aiMatchingService.computeScoresForJob(created).catch((err) => {
+      console.error('AI matching failed for new job:', err);
+    });
+
     return this.toResponse(created, hrProfile);
   }
 
@@ -199,6 +209,40 @@ export class JobService {
       limit,
       totalPages: total === 0 ? 0 : Math.ceil(total / limit),
     };
+  }
+
+  public async getRecommendedJobs(
+    user: UserDocument,
+  ): Promise<RecommendedJobItemResponseDto[]> {
+    const candidate = await this.getCandidateForUser(user);
+
+    const scores = await this.userJobScoreModel
+      .find({ candidateId: candidate._id })
+      .sort({ score: -1 })
+      .limit(10) // Top 10 for homepage
+      .exec();
+
+    if (scores.length === 0) {
+      return [];
+    }
+
+    const jobIds = scores.map((s) => s.jobId);
+    const jobs = await this.jobModel.find({ _id: { $in: jobIds } }).exec();
+    const jobsById = new Map(jobs.map((j) => [j._id.toString(), j]));
+
+    const items: RecommendedJobItemResponseDto[] = [];
+    for (const scoreDoc of scores) {
+      const job = jobsById.get(scoreDoc.jobId.toString());
+      if (job && job.status === JobStatus.OPEN) {
+        items.push({
+          job: this.toResponse(job),
+          score: scoreDoc.score,
+          matchedSkills: scoreDoc.matchedSkills,
+        });
+      }
+    }
+
+    return items;
   }
 
   public async getJobPostById(
