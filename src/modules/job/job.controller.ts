@@ -35,6 +35,7 @@ import { MyApplicationsStatsResponseDto } from './dtos/response/myApplicationsSt
 import { MyJobApplicationItemResponseDto } from './dtos/response/myJobApplicationItemResponse.dto';
 import { PaginatedJobListResponseDto } from './dtos/response/paginatedJobListResponse.dto';
 import { PaginatedMyJobApplicationsResponseDto } from './dtos/response/paginatedMyJobApplicationsResponse.dto';
+import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 
 @ApiTags('Jobs')
 @ApiBearerAuth('access-token')
@@ -74,6 +75,20 @@ export class JobController {
     @Query() query: ListJobPostsQueryDto,
   ): Promise<PaginatedJobListResponseDto> {
     return this.jobService.listJobPosts(userPayload, query);
+  }
+
+  @Get('recommended')
+  @ApiOperation({
+    summary: 'Candidate: list recommended jobs based on AI matching',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: [RecommendedJobItemResponseDto],
+  })
+  public async getRecommendedJobs(
+    @CurrentUser() userPayload: UserDocument,
+  ): Promise<RecommendedJobItemResponseDto[]> {
+    return this.jobService.getRecommendedJobs(userPayload);
   }
 
   @Get('applications/me/stats')

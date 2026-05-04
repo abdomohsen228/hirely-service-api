@@ -10,6 +10,8 @@ import * as path from 'path';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
+import { Candidate, CandidateDocument } from 'src/database/schemas/candidate.schema';
+import { AiMatchingService } from 'src/modules/ai-matching/ai-matching.service';
 import { PictureCVStatus } from 'src/database/enums/pictureCVstatus.enum';
 import {
   //   MAX_IMAGE_FILE_SIZE_BYTES,
@@ -24,7 +26,9 @@ import {
 export class UploadService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(Candidate.name) private readonly candidateModel: Model<CandidateDocument>,
     private readonly s3Service: S3Service,
+    private readonly aiMatchingService: AiMatchingService,
   ) {}
   private readonly bucket = process.env.AWS_S3_BUCKET_NAME!;
 
@@ -230,6 +234,18 @@ export class UploadService {
       user.cvStatus = PictureCVStatus.APPROVED;
       user.rejectionReason = undefined;
       await user.save();
+
+      // Update candidate profile and trigger AI matching
+      const candidate = await this.candidateModel.findOne({ user: user._id });
+      if (candidate) {
+        candidate.cvFileUrl = user.cvUrl;
+        await candidate.save();
+        
+        this.aiMatchingService.computeScoresForCandidate(candidate).catch((err) => {
+          console.error('AI matching failed for updated CV:', err);
+        });
+      }
+
       return { message: 'CV approved' };
     } else {
       user.cvStatus = PictureCVStatus.REJECTED;

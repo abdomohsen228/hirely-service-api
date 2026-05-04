@@ -28,6 +28,8 @@ import { CompleteHrRegistrationResponseDto } from './dtos/response/completeHrReg
 import { AuthProvider } from 'src/database/enums/authProvider.enum';
 import { GoogleAuthResponseDto } from './dtos/response/googleAuthResponse.dto';
 import { PictureCVStatus } from 'src/database/enums/pictureCVstatus.enum';
+import { UserJobScore, UserJobScoreDocument } from 'src/database/schemas/user_job_score.schema';
+import { AiMatchingService } from '../ai-matching/ai-matching.service';
 @Injectable()
 export class AuthService {
   constructor(
@@ -36,7 +38,9 @@ export class AuthService {
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
-  ) {}
+    @InjectModel(UserJobScore.name) private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    private readonly aiMatchingService: AiMatchingService,
+  ) { }
 
   public async register(
     registerRequestDto: RegisterRequestDto,
@@ -95,28 +99,31 @@ export class AuthService {
       throw new BadRequestException('Data already completed for this user');
     }
     const isPhoneNumberTaken = await this.candidateModel.findOne({
-      phoneNumber: dto.mobileNumber,
+      mobileNumber: dto.mobileNumber,
     });
     if (isPhoneNumberTaken) {
       throw new BadRequestException('Phone number already in use');
     }
     console.log('User profile picture status:', user.profilePictureStatus);
     console.log('User CV status:', user.cvStatus);
-    
-    if(!dto.profilePictureUrl)
-    {
+
+    if (!dto.profilePictureUrl) {
       await this.waitForFileApproval(userId, false);
     }
-    else{
+    else {
       await this.waitForFileApproval(userId);
     }
-    
+
 
     const candidate = await this.candidateModel.create({
       ...dto,
       username: emailPrefix,
       profilePictureUrl: dto.profilePictureUrl,
       cvFileUrl: dto.cvFileUrl,
+    });
+
+    this.aiMatchingService.computeScoresForCandidate(candidate).catch((err) => {
+      console.error('AI matching failed for updated CV:', err);
     });
 
     user.isProfileCompleted = true;
@@ -136,41 +143,41 @@ export class AuthService {
     );
   }
 
-private async waitForFileApproval(userId: string, profile: boolean = true) {
-  const timeout = 15000; 
-  const interval = 1000;
-  const start = Date.now();
+  private async waitForFileApproval(userId: string, profile: boolean = true) {
+    const timeout = 15000;
+    const interval = 1000;
+    const start = Date.now();
 
     while (Date.now() - start < timeout) {
       const user = await this.userModel.findById(userId);
 
       if (!user) throw new NotFoundException('User not found');
 
-    const { profilePictureStatus, cvStatus } = user;
-    
-    if (profilePictureStatus === PictureCVStatus.REJECTED) {
-      throw new BadRequestException(
-        `Profile picture rejected: ${user.rejectionReason}`,
-      );
-    }
+      const { profilePictureStatus, cvStatus } = user;
 
-    if (cvStatus === PictureCVStatus.REJECTED) {
-      throw new BadRequestException(`CV rejected: ${user.rejectionReason}`);
-    }
+      if (profilePictureStatus === PictureCVStatus.REJECTED) {
+        throw new BadRequestException(
+          `Profile picture rejected: ${user.rejectionReason}`,
+        );
+      }
 
-    if (
-      profilePictureStatus === PictureCVStatus.APPROVED &&
-      cvStatus === PictureCVStatus.APPROVED
-    ) {
-      return user;
-    }
+      if (cvStatus === PictureCVStatus.REJECTED) {
+        throw new BadRequestException(`CV rejected: ${user.rejectionReason}`);
+      }
 
-    if(!profile && cvStatus === PictureCVStatus.APPROVED) {
-      return user;
-    }
+      if (
+        profilePictureStatus === PictureCVStatus.APPROVED &&
+        cvStatus === PictureCVStatus.APPROVED
+      ) {
+        return user;
+      }
 
-    await new Promise((res) => setTimeout(res, interval));
-  }
+      if (!profile && cvStatus === PictureCVStatus.APPROVED) {
+        return user;
+      }
+
+      await new Promise((res) => setTimeout(res, interval));
+    }
     throw new BadRequestException(
       'Files are still under review. Please try again in a few seconds.',
     );
