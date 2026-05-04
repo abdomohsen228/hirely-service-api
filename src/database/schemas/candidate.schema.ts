@@ -9,8 +9,6 @@ import { profileStatus } from '../enums/user-profileStatus.enum';
 import { ExperienceLevel } from '../enums/experienceYears.enum';
 import { User } from './user.schema';
 
-
-
 /** Type for one embedded education row  */
 export type CandidateEducationEmbedded = {
   _id?: Types.ObjectId;

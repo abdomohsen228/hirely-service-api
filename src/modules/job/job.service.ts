@@ -30,7 +30,10 @@ import { MyApplicationsStatsResponseDto } from './dtos/response/myApplicationsSt
 import { MyJobApplicationItemResponseDto } from './dtos/response/myJobApplicationItemResponse.dto';
 import { PaginatedJobListResponseDto } from './dtos/response/paginatedJobListResponse.dto';
 import { PaginatedMyJobApplicationsResponseDto } from './dtos/response/paginatedMyJobApplicationsResponse.dto';
-import { UserJobScore, UserJobScoreDocument } from 'src/database/schemas/user_job_score.schema';
+import {
+  UserJobScore,
+  UserJobScoreDocument,
+} from 'src/database/schemas/user_job_score.schema';
 import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
@@ -47,7 +50,8 @@ export class JobService {
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(UserJobScore.name) private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    @InjectModel(UserJobScore.name)
+    private readonly userJobScoreModel: Model<UserJobScoreDocument>,
     private readonly aiMatchingService: AiMatchingService,
   ) {}
 
@@ -252,9 +256,21 @@ export class JobService {
     const jobId = this.parseJobObjectId(id);
     let filter: Record<string, unknown> = { _id: jobId };
 
+    let isCandidateApply: boolean = false;
     if (user.role === UserRole.HR) {
       filter = { ...filter, createdBy: user._id };
     } else if (user.role === UserRole.CANDIDATE) {
+      this.jobApplicationModel
+        .findOne({ jobId, candidateId: user._id })
+        .exec()
+        .then((app) => {
+          if (app) {
+            isCandidateApply = true;
+          }
+        })
+        .catch((err) => {
+          console.error('Error checking job application for candidate:', err);
+        });
       filter = { ...filter, status: JobStatus.OPEN };
     } else {
       throw new ForbiddenException('Only HR and candidates can access jobs');
@@ -264,8 +280,10 @@ export class JobService {
     if (!doc) {
       throw new NotFoundException('Job not found');
     }
-    const hrProfile = doc.hr ? await this.hrModel.findById(doc.hr).exec() : null;
-    return this.toResponse(doc, hrProfile);
+    const hrProfile = doc.hr
+      ? await this.hrModel.findById(doc.hr).exec()
+      : null;
+    return this.toResponse(doc, hrProfile, isCandidateApply);
   }
 
   public async listMyApplications(
@@ -564,6 +582,7 @@ export class JobService {
   private toResponse(
     doc: JobDocument,
     hrProfile?: HrDocument | null,
+    isCandidateApply?: boolean,
   ): JobPostResponseDto {
     return {
       id: doc._id.toString(),
@@ -581,6 +600,7 @@ export class JobService {
       hrName: hrProfile?.fullName ?? null,
       skills: doc.skills ?? [],
       keywords: doc.keywords ?? [],
+      isCandidateApply: isCandidateApply ?? false,
       interviewerQuestions: doc.interviewerQuestions ?? [],
       documentAttachment: doc.documentAttachment,
       companyName: doc.companyName,

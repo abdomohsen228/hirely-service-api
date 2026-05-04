@@ -5,7 +5,7 @@ import { Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { BadRequestException } from '@nestjs/common';
 
-const id  = uuidv4();
+const id = uuidv4();
 import {
   ALLOWED_IMAGE_MIME_TYPES,
   ALLOWED_PDF_MIME_TYPES,

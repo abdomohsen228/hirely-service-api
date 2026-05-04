@@ -9,7 +9,7 @@ export class InterviewQuestion extends Document {
   @Prop({ required: true })
   question: string;
 
-  @Prop({ 
+  @Prop({
     required: true,
     enum: QuestionTypes,
     default: QuestionTypes.TEXT,
@@ -20,7 +20,7 @@ export class InterviewQuestion extends Document {
   answerDuration: number; // Duration in seconds
 
   @Prop({ required: true })
-  templateId: Types.ObjectId; 
+  templateId: Types.ObjectId;
 
   @Prop({ required: true })
   createdBy: Types.ObjectId; // HR's ID

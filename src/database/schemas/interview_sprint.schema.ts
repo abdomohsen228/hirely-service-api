@@ -5,7 +5,7 @@ export type InterviewSprintDocument = InterviewSprint & Document;
 @Schema({ timestamps: true })
 export class InterviewSprint extends Document {
   @Prop({ required: true })
-  title: string; 
+  title: string;
 
   @Prop({ required: true })
   jobId: Types.ObjectId;

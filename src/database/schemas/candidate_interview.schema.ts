@@ -12,12 +12,12 @@ export class CandidateInterview extends Document {
   @Prop({ required: true })
   sprintId: Types.ObjectId; // Reference to the InterviewSprint
 
-  @Prop({ 
+  @Prop({
     required: true,
     enum: CandidateInterviewStatus,
     default: CandidateInterviewStatus.INVITED,
- })
-  status: CandidateInterviewStatus;  // INVITED / STARTED / SUBMITTED / EVALUATED
+  })
+  status: CandidateInterviewStatus; // INVITED / STARTED / SUBMITTED / EVALUATED
 
   @Prop({ required: true })
   started_at: Date;

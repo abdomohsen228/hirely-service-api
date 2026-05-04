@@ -69,6 +69,9 @@ export class JobPostResponseDto {
   applicationCount: number;
 
   @ApiProperty()
+  isCandidateApply?: boolean;
+
+  @ApiProperty()
   createdAt: Date;
 
   @ApiProperty()

@@ -7,14 +7,19 @@ import { AuthModule } from 'src/modules/auth/auth.module';
 // import { UploadProcessor } from 'src/queues/upload-queue/processor/upload.processor';
 import { AiMatchingModule } from 'src/modules/ai-matching/ai-matching.module';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Candidate, CandidateSchema } from 'src/database/schemas/candidate.schema';
+import {
+  Candidate,
+  CandidateSchema,
+} from 'src/database/schemas/candidate.schema';
 
 @Module({
   imports: [
     S3Module,
     AuthModule,
     AiMatchingModule,
-    MongooseModule.forFeature([{ name: Candidate.name, schema: CandidateSchema }]),
+    MongooseModule.forFeature([
+      { name: Candidate.name, schema: CandidateSchema },
+    ]),
   ],
   providers: [UploadService],
   controllers: [UploadController],
