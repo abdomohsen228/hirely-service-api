@@ -446,8 +446,8 @@ export class JobService {
       nextStepAt: null,
     });
 
+    await this.jobModel.updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } }).exec();
     job.applicationCount += 1;
-    await job.save();
 
     return {
       application: this.toApplicationResponse(application),
@@ -562,6 +562,11 @@ export class JobService {
       if (value !== undefined) {
         (doc as unknown as Record<string, unknown>)[key] = value;
       }
+    }
+
+    if (!doc.hr) {
+      const hrProfile = await this.getHrProfileForUser(user);
+      doc.hr = hrProfile._id;
     }
 
     await doc.save();
