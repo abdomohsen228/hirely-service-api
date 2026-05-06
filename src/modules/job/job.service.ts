@@ -256,21 +256,15 @@ export class JobService {
     const jobId = this.parseJobObjectId(id);
     let filter: Record<string, unknown> = { _id: jobId };
 
-    let isCandidateApply: boolean = false;
+    let isCandidateApply = false;
     if (user.role === UserRole.HR) {
       filter = { ...filter, createdBy: user._id };
     } else if (user.role === UserRole.CANDIDATE) {
-      this.jobApplicationModel
-        .findOne({ jobId, candidateId: user._id })
-        .exec()
-        .then((app) => {
-          if (app) {
-            isCandidateApply = true;
-          }
-        })
-        .catch((err) => {
-          console.error('Error checking job application for candidate:', err);
-        });
+      const candidate = await this.getCandidateForUser(user);
+      const application = await this.jobApplicationModel
+        .findOne({ jobId, candidateId: candidate._id })
+        .exec();
+      isCandidateApply = Boolean(application);
       filter = { ...filter, status: JobStatus.OPEN };
     } else {
       throw new ForbiddenException('Only HR and candidates can access jobs');
