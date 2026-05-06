@@ -53,7 +53,7 @@ export class JobService {
     @InjectModel(UserJobScore.name)
     private readonly userJobScoreModel: Model<UserJobScoreDocument>,
     private readonly aiMatchingService: AiMatchingService,
-  ) {}
+  ) { }
 
   private assertHrUser(user: UserDocument): void {
     if (user.role !== UserRole.HR) {
@@ -186,11 +186,15 @@ export class JobService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
-    let filter: Record<string, unknown>;
+    let filter: Record<string, unknown> = {};
+
+    let candidateId: Types.ObjectId | null = null;
 
     if (user.role === UserRole.HR) {
       filter = { createdBy: user._id };
     } else if (user.role === UserRole.CANDIDATE) {
+      const candidate = await this.getCandidateForUser(user);
+      candidateId = candidate._id;
       filter = { status: JobStatus.OPEN };
     } else {
       throw new ForbiddenException('Only HR and candidates can access jobs');
@@ -206,8 +210,21 @@ export class JobService {
       this.jobModel.countDocuments(filter).exec(),
     ]);
 
+    // Fetch all applications for this candidate in one query
+    let appliedJobIds = new Set<string>();
+    if (candidateId) {
+      const jobIds = docs.map((d) => d._id);
+      const applications = await this.jobApplicationModel
+        .find({ jobId: { $in: jobIds }, candidateId })
+        .select('jobId')
+        .exec();
+      appliedJobIds = new Set(applications.map((a) => a.jobId.toString()));
+    }
+
     return {
-      items: docs.map((d) => this.toResponse(d)),
+      items: docs.map((d) =>
+        this.toResponse(d, null, appliedJobIds.has(d._id.toString())),
+      ),
       total,
       page,
       limit,
