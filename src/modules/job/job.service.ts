@@ -249,6 +249,16 @@ export class JobService {
     return items;
   }
 
+  public async getRecentJobs(): Promise<JobPostResponseDto[]> {
+    const jobs = await this.jobModel
+      .find({ status: JobStatus.OPEN })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .exec();
+
+    return jobs.map((job) => this.toResponse(job));
+  }
+
   public async getJobPostById(
     user: UserDocument,
     id: string,

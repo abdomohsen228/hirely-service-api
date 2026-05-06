@@ -91,6 +91,18 @@ export class JobController {
     return this.jobService.getRecommendedJobs(userPayload);
   }
 
+  @Get('recent')
+  @ApiOperation({
+    summary: 'Candidate/HR: Get most recent 5 open jobs',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: [JobPostResponseDto],
+  })
+  public async getRecentJobs(): Promise<JobPostResponseDto[]> {
+    return this.jobService.getRecentJobs();
+  }
+
   @Get('applications/me/stats')
   @ApiOperation({
     summary:
