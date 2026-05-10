@@ -86,11 +86,26 @@ export class ProfileService {
 
   async getProfile(user: UserDocument) {
     const candidate = await this.getCandidateForUser(user);
+    if(user.profilePictureStatus === 'approved' ) {
+      const profileResponse = buildProfileResponse(user, candidate);  
+      profileResponse.profilePictureUrl = await this.uploadService.getProfilePictureUrl(user.id);
+      if(profileResponse.cvStatus === 'approved') {
+        profileResponse.cvFileUrl = await this.uploadService.getCvUrl(user.id);
+      }
+      return profileResponse;
+    }
     return buildProfileResponse(user, candidate);
   }
 
   async getHrProfile(user: UserDocument) {
     const hr = await this.getHrForUser(user);
+    if(user.profilePictureStatus === 'approved' ) {
+      hr.profilePictureUrl = await this.uploadService.getProfilePictureUrl(user.id);
+      if(hr.cvStatus === 'approved') {
+        hr.cvUrl = await this.uploadService.getCvUrl(user.id);
+      }
+      return buildHrProfileResponse(user, hr);
+    }
     return buildHrProfileResponse(user, hr);
   }
 
