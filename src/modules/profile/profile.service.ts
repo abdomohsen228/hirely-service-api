@@ -16,6 +16,7 @@ import { Hr, HrDocument } from 'src/database/schemas/hr.schema';
 import { UserDocument } from 'src/database/schemas/user.schema';
 import { UploadService } from 'src/upload/upload.service';
 import { createValidatedResponse } from './dtos/create-validated-response';
+import { UpdateHrProfileRequestDto } from './dtos/request/updateHrProfile.request.dto';
 import { UpdateProfileRequestDto } from './dtos/request/updateProfile.request.dto';
 import { UpdateProfilePhotoRequestDto } from './dtos/request/updateProfilePhoto.request.dto';
 import { PresignedUploadResponseDto } from './dtos/response/presignedUpload.response.dto';
@@ -109,6 +110,32 @@ export class ProfileService {
     else if(user.cvStatus === 'approved') {
       hr.cvUrl = await this.uploadService.getCvUrl(user.id);
     }
+    return buildHrProfileResponse(user, hr);
+  }
+
+  async updateHrProfile(user: UserDocument, dto: UpdateHrProfileRequestDto) {
+    const hr = await this.getHrForUser(user);
+    const {
+      fullName,
+      phoneNumber,
+      companyName,
+      companyWebsite,
+      companySummary,
+      companySize,
+      companyIndustry,
+      jobTitle,
+    } = dto;
+
+    if (fullName !== undefined) hr.fullName = fullName;
+    if (phoneNumber !== undefined) hr.phoneNumber = phoneNumber;
+    if (companyName !== undefined) hr.companyName = companyName;
+    if (companyWebsite !== undefined) hr.companyWebsite = companyWebsite;
+    if (companySummary !== undefined) hr.companySummary = companySummary;
+    if (companySize !== undefined) hr.companySize = companySize;
+    if (companyIndustry !== undefined) hr.companyIndustry = companyIndustry;
+    if (jobTitle !== undefined) hr.jobTitle = jobTitle;
+
+    await hr.save();
     return buildHrProfileResponse(user, hr);
   }
 
