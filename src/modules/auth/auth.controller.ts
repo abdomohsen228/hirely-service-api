@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -29,7 +30,7 @@ import { CompleteCandidateRegistrationResponseDto } from './dtos/response/comple
 import { CompleteHrRegistrationRequestDto } from './dtos/request/completeHrRegistrationRequest.dto';
 import { CompleteHrRegistrationResponseDto } from './dtos/response/completeHrRegistrationResponse.dto';
 import { GoogleAuthGuard } from './guards/googleAuth.guard';
-import { GoogleAuthResponseDto } from './dtos/response/googleAuthResponse.dto';
+import { Request, Response } from 'express';
 @ApiTags('App Authentication')
 @ApiBearerAuth()
 @Controller('/auth')
@@ -130,13 +131,17 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Google OAuth callback' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'User authenticated via Google',
-    type: GoogleAuthResponseDto,
-  })
-  public async handleRedirect(@Req() req): Promise<GoogleAuthResponseDto> {
-    return this.authServices.googleValidateUser(req.user);
+  async handleRedirect(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const response = await this.authServices.googleValidateUser(req.user);
+
+    const { token, isProfileCompleted } = response;
+
+    return res.redirect(
+      `http://localhost:5173/auth/callback?token=${token}&isNewUser=${!isProfileCompleted}`,
+    );
   }
 
   @Post('/logout')
