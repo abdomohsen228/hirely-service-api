@@ -128,6 +128,7 @@ export class AuthController {
   }
 
   @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Google OAuth callback' })
   @ApiResponse({
     status: HttpStatus.OK,
