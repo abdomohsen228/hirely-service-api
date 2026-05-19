@@ -22,13 +22,16 @@ import { UpdateProfilePhotoRequestDto } from './dtos/request/updateProfilePhoto.
 import { HrProfileResponseDto } from './dtos/response/hrProfile.response.dto';
 import { ProfileResponseDto } from './dtos/response/profile.response.dto';
 import { PresignedUploadResponseDto } from './dtos/response/presignedUpload.response.dto';
+import { UploadService } from 'src/upload/upload.service';
 
 @ApiTags('Profile')
 @ApiBearerAuth('access-token')
 @UseGuards(AuthGuard)
 @Controller('profile')
 export class ProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(private readonly profileService: ProfileService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   @Get('hr')
   @ApiOperation({ summary: 'Get current HR profile' })
@@ -79,5 +82,13 @@ export class ProfileController {
     @Body() body: UpdateProfilePhotoRequestDto,
   ) {
     return this.profileService.updateProfilePhoto(user, body);
+  }
+
+  @Get('photo')
+  @ApiOperation({ summary: 'Get profile photo URL' })
+  @ApiResponse({ status: HttpStatus.OK, type: PresignedUploadResponseDto })
+  getProfilePhoto(@CurrentUser() user: UserDocument) {
+    console.log('Getting profile photo for user', user.id);
+    return this.profileService.getProfilePictureUrl(user);
   }
 }

@@ -12,6 +12,7 @@ export class UploadProcessor extends WorkerHost {
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
+    console.log(`Processing job ${job.id} of type ${job.name} with data:`, job.data);
     if (job.name === UploadJobs.VALIDATE_UPLOAD) {
       const { Key, Status, Type, Reason } = job.data;
       await this.uploadValidation(Key, Status, Type, Reason);
@@ -27,6 +28,7 @@ export class UploadProcessor extends WorkerHost {
     if (type === 'image') {
       await this.uploadService.validateProfileUpload(key, status, reason);
     } else if (type === 'cv') {
+      console.log('Validating CV upload with key:', key, 'status:', status, 'reason:', reason);
       await this.uploadService.validateCvUpload(key, status, reason);
     } else {
       //   await this.uploadService.validateVideoUpload(key, status, reason);

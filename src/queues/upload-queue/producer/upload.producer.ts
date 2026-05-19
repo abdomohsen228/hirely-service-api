@@ -8,6 +8,7 @@ export class UploadProducer {
   constructor(@InjectQueue(UPLOAD_QUEUE) private uploadQueue: Queue) {}
 
   async validateUpload(data: any) {
+    console.log('Adding upload validation job to the queue with data:', data);
     await this.uploadQueue.add(UploadJobs.VALIDATE_UPLOAD, data);
     return { message: 'Upload validation job added to the queue' };
   }

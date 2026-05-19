@@ -13,7 +13,7 @@ import {
   CandidateExperienceEmbedded,
 } from 'src/database/schemas/candidate.schema';
 import { Hr, HrDocument } from 'src/database/schemas/hr.schema';
-import { UserDocument } from 'src/database/schemas/user.schema';
+import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { UploadService } from 'src/upload/upload.service';
 import { createValidatedResponse } from './dtos/create-validated-response';
 import { UpdateHrProfileRequestDto } from './dtos/request/updateHrProfile.request.dto';
@@ -21,10 +21,13 @@ import { UpdateProfileRequestDto } from './dtos/request/updateProfile.request.dt
 import { UpdateProfilePhotoRequestDto } from './dtos/request/updateProfilePhoto.request.dto';
 import { PresignedUploadResponseDto } from './dtos/response/presignedUpload.response.dto';
 import { buildHrProfileResponse, buildProfileResponse } from './profile.mapper';
+import { PictureCVStatus } from 'src/database/enums/pictureCVstatus.enum';
+import {BadRequestException} from '@nestjs/common/exceptions';
 
 @Injectable()
 export class ProfileService {
   constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
@@ -231,6 +234,14 @@ export class ProfileService {
     body: UpdateProfilePhotoRequestDto,
   ) {
     this.ensureCandidateRole(user);
+    if(user.profilePictureStatus != 'approved' ) {
+      const raw = await this.uploadService.createProfilePictureUploadUrl({
+        userId: user.id,
+        fileName: body.fileName,
+        contentType: body.contentType,
+      });
+      return createValidatedResponse(PresignedUploadResponseDto, raw);
+    }
     const raw = await this.uploadService.updateProfilePictureUrl({
       userId: user.id,
       fileName: body.fileName,
@@ -238,4 +249,41 @@ export class ProfileService {
     });
     return createValidatedResponse(PresignedUploadResponseDto, raw);
   }
+
+  async getProfilePictureUrl(user: UserDocument) {
+    this.ensureCandidateRole(user);
+    const approvedUser = await this.waitForFileApproval(user.id.toString());
+    console.log('the returned status is:', approvedUser);
+    return this.uploadService.getProfilePictureUrl(user.id.toString());
+  }
+
+  private async waitForFileApproval(userId: string) {
+      const timeout = 15000;
+      const interval = 1000;
+      const start = Date.now();
+  
+      while (Date.now() - start < timeout) {
+        const user = await this.userModel.findById(userId);
+  
+        if (!user) throw new NotFoundException('User not found');
+  
+        const { profilePictureStatus } = user;
+  
+        if (profilePictureStatus === PictureCVStatus.REJECTED) {
+          throw new BadRequestException(
+            `Profile picture rejected: ${user.rejectionReason}`,
+          );
+        }
+  
+        if ( profilePictureStatus === PictureCVStatus.APPROVED) {
+          return user.profilePictureStatus;
+        }
+        // console.log(`Waiting for file approval. Current status: ${profilePictureStatus}`);
+  
+        await new Promise((res) => setTimeout(res, interval));
+      }
+      throw new BadRequestException(
+        'Files are still under review. Please try again in a few seconds.',
+      );
+    }
 }

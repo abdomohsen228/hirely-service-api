@@ -112,6 +112,7 @@ export class AuthService {
     console.log('User CV status:', user.cvStatus);
 
     if (!dto.profilePictureUrl) {
+      console.log('Profile picture URL isn\'t there');
       await this.waitForFileApproval(userId, false);
     } else {
       await this.waitForFileApproval(userId);

@@ -7,7 +7,7 @@ import { UPLOAD_QUEUE } from '../queue.constants';
   imports: [
     BullModule.registerQueue({
       name: UPLOAD_QUEUE,
-    }),
+    })
   ],
   providers: [UploadProducer],
   exports: [UploadProducer],
