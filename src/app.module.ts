@@ -10,6 +10,7 @@ import awsConfig from './config/aws.config';
 import { BullModule } from '@nestjs/bullmq';
 import { ProfileModule } from './modules/profile/profile.module';
 import { AiMatchingModule } from './modules/ai-matching/ai-matching.module';
+import { EmailModule } from './modules/email/email.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -31,13 +32,14 @@ import { AiMatchingModule } from './modules/ai-matching/ai-matching.module';
     AuthModule,
     UploadModule,
     ProfileModule,
+    EmailModule,
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST,
         port: parseInt(process.env.REDIS_PORT || '6379', 10),
         username: process.env.REDIS_USERNAME,
         password: process.env.REDIS_PASSWORD,
-        tls: {}
+        tls: {},
       },
       defaultJobOptions: {
         removeOnComplete: true,
@@ -55,4 +57,4 @@ import { AiMatchingModule } from './modules/ai-matching/ai-matching.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

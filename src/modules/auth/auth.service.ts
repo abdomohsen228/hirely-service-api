@@ -124,7 +124,7 @@ export class AuthService {
     console.log('User CV status:', user.cvStatus);
 
     if (!dto.profilePictureUrl) {
-      console.log('Profile picture URL isn\'t there');
+      console.log("Profile picture URL isn't there");
       await this.waitForFileApproval(userId, false);
     } else {
       await this.waitForFileApproval(userId);
@@ -335,11 +335,7 @@ export class AuthService {
   ): Promise<MessageResponseDto> {
     const user = await this.userModel.findOne({ email: dto.email });
 
-    if (
-      user &&
-      user.provider === AuthProvider.LOCAL &&
-      user.hashedPassword
-    ) {
+    if (user && user.provider === AuthProvider.LOCAL && user.hashedPassword) {
       const rawToken = randomBytes(32).toString('hex');
       const tokenHash = this.hashResetToken(rawToken);
       const expiryMinutes = Number(
