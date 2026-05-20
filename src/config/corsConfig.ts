@@ -7,6 +7,7 @@ export const getCorsConfig = (configService: ConfigService) => {
     'http://localhost:3001',
     'http://localhost:4000',
     'http://localhost:5173',
+    'https://hirely-platform-liart.vercel.app',
   ];
 
   return {
