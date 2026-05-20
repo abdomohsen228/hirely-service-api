@@ -31,15 +31,6 @@ export class HrProfileResponseDto {
   @IsBoolean()
   isProfileCompleted: boolean;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  profilePictureUrl?: string;
-
-  @ApiPropertyOptional({ enum: PictureCVStatus })
-  @IsOptional()
-  @IsEnum(PictureCVStatus)
-  profilePictureStatus?: PictureCVStatus;
 
   @ApiProperty()
   @IsString()

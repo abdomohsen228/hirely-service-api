@@ -21,12 +21,19 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ApplicationStatus } from 'src/database/enums/applicationStatus.enum';
+import { CompanyIndustry } from 'src/database/enums/companyIndustry.enum';
+import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
+import { JobType } from 'src/database/enums/jobType.enum';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guards';
 import { CurrentUser } from 'src/decorators/currentPayload';
 import { UserDocument } from 'src/database/schemas/user.schema';
 import { JobService } from './job.service';
 import { CreateJobPostRequestDto } from './dtos/request/createJobPostRequest.dto';
-import { ListJobPostsQueryDto } from './dtos/request/listJobPostsQuery.dto';
+import {
+  DatePostedFilter,
+  ListJobPostsQueryDto,
+  WorkplaceTypeFilter,
+} from './dtos/request/listJobPostsQuery.dto';
 import { ListMyApplicationsQueryDto } from './dtos/request/listMyApplicationsQuery.dto';
 import { UpdateHrJobApplicationRequestDto } from './dtos/request/updateHrJobApplicationRequest.dto';
 import { UpdateJobPostRequestDto } from './dtos/request/updateJobPostRequest.dto';
@@ -66,6 +73,56 @@ export class JobController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by title, company, department, skills, or keywords',
+  })
+  @ApiQuery({
+    name: 'jobTypes',
+    required: false,
+    enum: JobType,
+    isArray: true,
+    description: 'Comma-separated or repeated values',
+  })
+  @ApiQuery({
+    name: 'experienceLevels',
+    required: false,
+    enum: ExperienceLevel,
+    isArray: true,
+    description: 'Comma-separated or repeated values',
+  })
+  @ApiQuery({
+    name: 'workplaceTypes',
+    required: false,
+    enum: WorkplaceTypeFilter,
+    isArray: true,
+    description:
+      'Inferred from location text until a dedicated workplaceType field exists',
+  })
+  @ApiQuery({
+    name: 'locations',
+    required: false,
+    type: String,
+    isArray: true,
+    description: 'Comma-separated or repeated location text values',
+  })
+  @ApiQuery({
+    name: 'industries',
+    required: false,
+    enum: CompanyIndustry,
+    isArray: true,
+    description: 'Comma-separated or repeated company industry values',
+  })
+  @ApiQuery({ name: 'salaryExpectation', required: false, type: Number })
+  @ApiQuery({ name: 'minSalary', required: false, type: Number })
+  @ApiQuery({ name: 'maxSalary', required: false, type: Number })
+  @ApiQuery({ name: 'datePosted', required: false, enum: DatePostedFilter })
+  @ApiQuery({ name: 'applied', required: false, type: Boolean })
+  @ApiQuery({ name: 'sponsorshipProvided', required: false, type: Boolean })
+  @ApiQuery({ name: 'immediateStart', required: false, type: Boolean })
+  @ApiQuery({ name: 'hiddenJobs', required: false, type: Boolean })
   @ApiResponse({
     status: HttpStatus.OK,
     type: PaginatedJobListResponseDto,

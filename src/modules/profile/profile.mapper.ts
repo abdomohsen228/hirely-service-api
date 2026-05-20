@@ -122,6 +122,7 @@ export function buildHrProfileResponse(
   };
   const createdAt = toIso(withTimestamps.createdAt) ?? new Date().toISOString();
   const updatedAt = toIso(withTimestamps.updatedAt) ?? createdAt;
+  const companyWebsite = h.companyWebsite?.trim() ?? '';
 
   return createValidatedResponse(HrProfileResponseDto, {
     id: hr._id.toString(),
@@ -134,7 +135,7 @@ export function buildHrProfileResponse(
     username: h.username,
     phoneNumber: h.phoneNumber,
     companyName: h.companyName,
-    companyWebsite: h.companyWebsite,
+    companyWebsite,
     companySummary: h.companySummary,
     companySize: h.companySize,
     companyIndustry: h.companyIndustry,
