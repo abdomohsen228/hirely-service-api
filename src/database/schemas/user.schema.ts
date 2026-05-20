@@ -62,6 +62,12 @@ export class User extends Document {
 
   @Prop()
   rejectionReason: string;
+
+  @Prop({ select: false })
+  passwordResetTokenHash?: string;
+
+  @Prop({ select: false })
+  passwordResetExpiresAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
