@@ -39,7 +39,7 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  app.listen(4000, '0.0.0.0');
+  app.listen(3000);
 
 }
 bootstrap();

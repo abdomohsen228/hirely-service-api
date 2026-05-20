@@ -169,6 +169,9 @@ export class JobService {
       companyName: hrProfile.companyName,
       hr: hrProfile._id,
       createdBy: user._id,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      sprintDuration: dto.sprintDuration,
     });
 
     // Trigger AI matching for all candidates
@@ -632,6 +635,9 @@ export class JobService {
       companyName: doc.companyName,
       createdBy: doc.createdBy.toString(),
       status: doc.status,
+      startDate: doc.startDate,
+      endDate: doc.endDate,
+      sprintDuration: doc.sprintDuration,
       applicationCount: doc.applicationCount,
       createdAt: doc.get('createdAt'),
       updatedAt: doc.get('updatedAt'),

@@ -73,6 +73,28 @@ export class Job extends Document {
 
   @Prop({ default: 0 })
   applicationCount: number;
+
+  @Prop({
+    required: true,
+  })
+  startDate: Date;
+
+  @Prop({
+    required: true,
+  })
+  endDate: Date;
+
+  @Prop({
+    type: Number,
+    min: 1,
+    max: 12,
+    required: true,
+    default: 4,
+  })
+  sprintDuration: number;
+
+
 }
+
 
 export const JobSchema = SchemaFactory.createForClass(Job);
