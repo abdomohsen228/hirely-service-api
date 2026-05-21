@@ -134,7 +134,7 @@ export function buildHrProfileResponse(
     username: h.username,
     phoneNumber: h.phoneNumber,
     companyName: h.companyName,
-    companyWebsite: h.companyWebsite,
+    companyWebsite: h.companyWebsite ?? "",
     companySummary: h.companySummary,
     companySize: h.companySize,
     companyIndustry: h.companyIndustry,

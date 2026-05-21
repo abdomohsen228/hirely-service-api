@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -10,6 +11,8 @@ import {
   IsString,
   MaxLength,
   Min,
+  Max,
+  IsDate
 } from 'class-validator';
 import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
 import { JobType } from 'src/database/enums/jobType.enum';
@@ -118,4 +121,30 @@ export class CreateJobPostRequestDto {
   @MaxLength(2000)
   @IsOptional()
   documentAttachment?: string;
+
+  @ApiPropertyOptional({
+    description: 'for when the job post should go live',
+  })
+  // @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  startDate: Date;
+
+  @ApiPropertyOptional({
+    description: 'for when the job post should expire',
+  })
+  // @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  endDate: Date;
+
+  @ApiPropertyOptional({
+    example: 30,
+    description: 'Number of weeks the job sprint should be active ',
+  })
+  // @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(12)
+  sprintDuration: number;
 }

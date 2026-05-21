@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -29,7 +30,10 @@ import { CompleteCandidateRegistrationResponseDto } from './dtos/response/comple
 import { CompleteHrRegistrationRequestDto } from './dtos/request/completeHrRegistrationRequest.dto';
 import { CompleteHrRegistrationResponseDto } from './dtos/response/completeHrRegistrationResponse.dto';
 import { GoogleAuthGuard } from './guards/googleAuth.guard';
-import { GoogleAuthResponseDto } from './dtos/response/googleAuthResponse.dto';
+import { Request, Response } from 'express';
+import { ForgotPasswordRequestDto } from './dtos/request/forgotPasswordRequest.dto';
+import { ResetPasswordRequestDto } from './dtos/request/resetPasswordRequest.dto';
+import { MessageResponseDto } from './dtos/response/messageResponse.dto';
 @ApiTags('App Authentication')
 @ApiBearerAuth()
 @Controller('/auth')
@@ -130,13 +134,47 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Google OAuth callback' })
+  async handleRedirect(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const response = await this.authServices.googleValidateUser(req.user);
+
+    const { token, isProfileCompleted } = response;
+
+    return res.redirect(
+      `http://localhost:5173/auth/callback?token=${token}&isNewUser=${!isProfileCompleted}`,
+    );
+  }
+
+  @Post('/forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a password reset email' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User authenticated via Google',
-    type: GoogleAuthResponseDto,
+    description: 'Reset email sent if account exists',
+    type: MessageResponseDto,
   })
-  public async handleRedirect(@Req() req): Promise<GoogleAuthResponseDto> {
-    return this.authServices.googleValidateUser(req.user);
+  @ApiBody({ type: ForgotPasswordRequestDto })
+  public async forgotPassword(
+    @Body() dto: ForgotPasswordRequestDto,
+  ): Promise<MessageResponseDto> {
+    return this.authServices.forgotPassword(dto);
+  }
+
+  @Post('/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Set a new password using reset token' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Password reset successfully',
+    type: MessageResponseDto,
+  })
+  @ApiBody({ type: ResetPasswordRequestDto })
+  public async resetPassword(
+    @Body() dto: ResetPasswordRequestDto,
+  ): Promise<MessageResponseDto> {
+    return this.authServices.resetPassword(dto);
   }
 
   @Post('/logout')

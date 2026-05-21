@@ -3,13 +3,13 @@ import { UploadService } from './upload.service';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guards';
 import { UseGuards } from '@nestjs/common';
 import { ImageUploadDto } from './dtos/imageUpload.dto';
-// import { UploadProducer } from 'src/queues/upload-queue/producer/upload.producer';
+import { UploadProducer } from 'src/queues/upload-queue/producer/upload.producer';
 
 @Controller('upload')
 export class UploadController {
   constructor(
     private readonly uploadService: UploadService,
-    // private readonly uploadProducer: UploadProducer,
+    private readonly uploadProducer: UploadProducer,
   ) {}
 
   @Post('video')

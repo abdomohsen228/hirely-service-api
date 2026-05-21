@@ -5,6 +5,8 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createHash, randomBytes } from 'crypto';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
@@ -33,10 +35,20 @@ import {
   UserJobScoreDocument,
 } from 'src/database/schemas/user_job_score.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
+import { ForgotPasswordRequestDto } from './dtos/request/forgotPasswordRequest.dto';
+import { ResetPasswordRequestDto } from './dtos/request/resetPasswordRequest.dto';
+import { MessageResponseDto } from './dtos/response/messageResponse.dto';
+import { EmailService } from '../email/email.service';
+
+const PASSWORD_RESET_SUCCESS_MESSAGE =
+  'If an account exists with this email, a password reset link has been sent.';
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
@@ -112,6 +124,7 @@ export class AuthService {
     console.log('User CV status:', user.cvStatus);
 
     if (!dto.profilePictureUrl) {
+      console.log("Profile picture URL isn't there");
       await this.waitForFileApproval(userId, false);
     } else {
       await this.waitForFileApproval(userId);
@@ -315,6 +328,65 @@ export class AuthService {
     userObject.tokenVersion += 1;
     await userObject.save({ validateBeforeSave: false });
     return 'Logout successful';
+  }
+
+  public async forgotPassword(
+    dto: ForgotPasswordRequestDto,
+  ): Promise<MessageResponseDto> {
+    const user = await this.userModel.findOne({ email: dto.email });
+
+    if (user && user.provider === AuthProvider.LOCAL && user.hashedPassword) {
+      const rawToken = randomBytes(32).toString('hex');
+      const tokenHash = this.hashResetToken(rawToken);
+      const expiryMinutes = Number(
+        this.configService.get<string>('PASSWORD_RESET_TOKEN_EXPIRY_MINUTES') ??
+          '60',
+      );
+
+      user.passwordResetTokenHash = tokenHash;
+      user.passwordResetExpiresAt = new Date(
+        Date.now() + expiryMinutes * 60 * 1000,
+      );
+      await user.save({ validateBeforeSave: false });
+
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ??
+        'http://localhost:5173';
+      const resetLink = `${frontendUrl}/ResetPassword?token=${rawToken}`;
+
+      await this.emailService.sendPasswordResetEmail(user.email, resetLink);
+    }
+
+    return MessageResponseDto.of(PASSWORD_RESET_SUCCESS_MESSAGE);
+  }
+
+  public async resetPassword(
+    dto: ResetPasswordRequestDto,
+  ): Promise<MessageResponseDto> {
+    const tokenHash = this.hashResetToken(dto.token);
+
+    const user = await this.userModel
+      .findOne({
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: { $gt: new Date() },
+      })
+      .select('+passwordResetTokenHash +passwordResetExpiresAt');
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    user.hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    user.passwordResetTokenHash = undefined;
+    user.passwordResetExpiresAt = undefined;
+    user.tokenVersion += 1;
+    await user.save({ validateBeforeSave: false });
+
+    return MessageResponseDto.of('Password has been reset successfully');
+  }
+
+  private hashResetToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
   }
 
   private generateAccessToken(payload: JwtPayload): string {

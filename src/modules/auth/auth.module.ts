@@ -13,6 +13,7 @@ import {
 } from 'src/database/schemas/candidate.schema';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { AiMatchingModule } from '../ai-matching/ai-matching.module';
+import { EmailModule } from '../email/email.module';
 import {
   UserJobScore,
   UserJobScoreSchema,
@@ -24,6 +25,7 @@ import {
   imports: [
     ConfigModule,
     AiMatchingModule,
+    EmailModule,
 
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },

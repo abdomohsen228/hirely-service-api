@@ -53,7 +53,7 @@ export class JobService {
     @InjectModel(UserJobScore.name)
     private readonly userJobScoreModel: Model<UserJobScoreDocument>,
     private readonly aiMatchingService: AiMatchingService,
-  ) {}
+  ) { }
 
   private assertHrUser(user: UserDocument): void {
     if (user.role !== UserRole.HR) {
@@ -169,6 +169,9 @@ export class JobService {
       companyName: hrProfile.companyName,
       hr: hrProfile._id,
       createdBy: user._id,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      sprintDuration: dto.sprintDuration,
     });
 
     // Trigger AI matching for all candidates
@@ -186,11 +189,15 @@ export class JobService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
-    let filter: Record<string, unknown>;
+    let filter: Record<string, unknown> = {};
+
+    let candidateId: Types.ObjectId | null = null;
 
     if (user.role === UserRole.HR) {
       filter = { createdBy: user._id };
     } else if (user.role === UserRole.CANDIDATE) {
+      const candidate = await this.getCandidateForUser(user);
+      candidateId = candidate._id;
       filter = { status: JobStatus.OPEN };
     } else {
       throw new ForbiddenException('Only HR and candidates can access jobs');
@@ -206,8 +213,21 @@ export class JobService {
       this.jobModel.countDocuments(filter).exec(),
     ]);
 
+    // Fetch all applications for this candidate in one query
+    let appliedJobIds = new Set<string>();
+    if (candidateId) {
+      const jobIds = docs.map((d) => d._id);
+      const applications = await this.jobApplicationModel
+        .find({ jobId: { $in: jobIds }, candidateId })
+        .select('jobId')
+        .exec();
+      appliedJobIds = new Set(applications.map((a) => a.jobId.toString()));
+    }
+
     return {
-      items: docs.map((d) => this.toResponse(d)),
+      items: docs.map((d) =>
+        this.toResponse(d, null, appliedJobIds.has(d._id.toString())),
+      ),
       total,
       page,
       limit,
@@ -249,6 +269,16 @@ export class JobService {
     return items;
   }
 
+  public async getRecentJobs(): Promise<JobPostResponseDto[]> {
+    const jobs = await this.jobModel
+      .find({ status: JobStatus.OPEN })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .exec();
+
+    return jobs.map((job) => this.toResponse(job));
+  }
+
   public async getJobPostById(
     user: UserDocument,
     id: string,
@@ -256,21 +286,15 @@ export class JobService {
     const jobId = this.parseJobObjectId(id);
     let filter: Record<string, unknown> = { _id: jobId };
 
-    let isCandidateApply: boolean = false;
+    let isCandidateApply = false;
     if (user.role === UserRole.HR) {
       filter = { ...filter, createdBy: user._id };
     } else if (user.role === UserRole.CANDIDATE) {
-      this.jobApplicationModel
-        .findOne({ jobId, candidateId: user._id })
-        .exec()
-        .then((app) => {
-          if (app) {
-            isCandidateApply = true;
-          }
-        })
-        .catch((err) => {
-          console.error('Error checking job application for candidate:', err);
-        });
+      const candidate = await this.getCandidateForUser(user);
+      const application = await this.jobApplicationModel
+        .findOne({ jobId, candidateId: candidate._id })
+        .exec();
+      isCandidateApply = Boolean(application);
       filter = { ...filter, status: JobStatus.OPEN };
     } else {
       throw new ForbiddenException('Only HR and candidates can access jobs');
@@ -446,8 +470,8 @@ export class JobService {
       nextStepAt: null,
     });
 
+    await this.jobModel.updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } }).exec();
     job.applicationCount += 1;
-    await job.save();
 
     return {
       application: this.toApplicationResponse(application),
@@ -564,6 +588,11 @@ export class JobService {
       }
     }
 
+    if (!doc.hr) {
+      const hrProfile = await this.getHrProfileForUser(user);
+      doc.hr = hrProfile._id;
+    }
+
     await doc.save();
     return this.toResponse(doc);
   }
@@ -606,6 +635,9 @@ export class JobService {
       companyName: doc.companyName,
       createdBy: doc.createdBy.toString(),
       status: doc.status,
+      startDate: doc.startDate,
+      endDate: doc.endDate,
+      sprintDuration: doc.sprintDuration,
       applicationCount: doc.applicationCount,
       createdAt: doc.get('createdAt'),
       updatedAt: doc.get('updatedAt'),
