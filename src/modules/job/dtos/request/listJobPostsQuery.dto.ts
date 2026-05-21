@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -26,15 +26,6 @@ export enum WorkplaceTypeFilter {
   ONSITE = 'ONSITE',
 }
 
-const toArray = ({ value }: { value: unknown }) => {
-  if (value === undefined || value === null || value === '') return undefined;
-  if (Array.isArray(value)) return value;
-  return String(value)
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
-
 export class ListJobPostsQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
   @IsOptional()
@@ -52,7 +43,8 @@ export class ListJobPostsQueryDto {
   limit?: number;
 
   @ApiPropertyOptional({
-    description: 'Search by job title, company name, department, skills, or keywords',
+    description:
+      'Search by job title, company name, department, skills, or keywords',
     example: 'graphic designer',
   })
   @IsOptional()
@@ -61,57 +53,45 @@ export class ListJobPostsQueryDto {
 
   @ApiPropertyOptional({
     enum: JobType,
-    isArray: true,
-    description: 'Comma-separated or repeated job type filters',
-    example: [JobType.FULL_TIME],
+    example: JobType.FULL_TIME,
   })
   @IsOptional()
-  @Transform(toArray)
-  @IsEnum(JobType, { each: true })
-  jobTypes?: JobType[];
+  @IsEnum(JobType)
+  jobType?: JobType;
 
   @ApiPropertyOptional({
     enum: ExperienceLevel,
-    isArray: true,
-    description: 'Comma-separated or repeated experience level filters',
-    example: [ExperienceLevel.FRESH, ExperienceLevel.JUNIOR],
+    example: ExperienceLevel.FRESH,
   })
   @IsOptional()
-  @Transform(toArray)
-  @IsEnum(ExperienceLevel, { each: true })
-  experienceLevels?: ExperienceLevel[];
+  @IsEnum(ExperienceLevel)
+  experienceLevel?: ExperienceLevel;
 
   @ApiPropertyOptional({
     enum: WorkplaceTypeFilter,
-    isArray: true,
     description:
       'Inferred from location text until a dedicated workplaceType field exists',
-    example: [WorkplaceTypeFilter.REMOTE],
+    example: WorkplaceTypeFilter.REMOTE,
   })
   @IsOptional()
-  @Transform(toArray)
-  @IsEnum(WorkplaceTypeFilter, { each: true })
-  workplaceTypes?: WorkplaceTypeFilter[];
+  @IsEnum(WorkplaceTypeFilter)
+  workplaceType?: WorkplaceTypeFilter;
 
   @ApiPropertyOptional({
-    description: 'Comma-separated or repeated location text filters',
-    example: ['United States', 'Lisle, IL'],
+    description: 'Location text filter',
+    example: 'United States',
   })
   @IsOptional()
-  @Transform(toArray)
-  @IsString({ each: true })
-  locations?: string[];
+  @IsString()
+  location?: string;
 
   @ApiPropertyOptional({
     enum: CompanyIndustry,
-    isArray: true,
-    description: 'Comma-separated or repeated company industry filters',
-    example: [CompanyIndustry.FINANCE, CompanyIndustry.HEALTHCARE],
+    example: CompanyIndustry.FINANCE,
   })
   @IsOptional()
-  @Transform(toArray)
-  @IsEnum(CompanyIndustry, { each: true })
-  industries?: CompanyIndustry[];
+  @IsEnum(CompanyIndustry)
+  industry?: CompanyIndustry;
 
   @ApiPropertyOptional({
     description:

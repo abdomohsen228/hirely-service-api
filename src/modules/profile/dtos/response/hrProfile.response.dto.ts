@@ -11,7 +11,6 @@ import {
 } from 'class-validator';
 import { CompanyIndustry } from 'src/database/enums/companyIndustry.enum';
 import { CompanySize } from 'src/database/enums/companySize.enum';
-import { PictureCVStatus } from 'src/database/enums/pictureCVstatus.enum';
 import { profileStatus } from 'src/database/enums/user-profileStatus.enum';
 
 export class HrProfileResponseDto {
@@ -77,10 +76,6 @@ export class HrProfileResponseDto {
   @ApiProperty({ enum: profileStatus })
   @IsEnum(profileStatus)
   accountStatus: profileStatus;
-
-  @ApiProperty()
-  @IsBoolean()
-  emailVerified: boolean;
 
   @ApiPropertyOptional()
   @IsOptional()

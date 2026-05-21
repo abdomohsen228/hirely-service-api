@@ -117,31 +117,30 @@ export class JobService {
   }
 
   private getWorkplaceTypeFilter(
-    workplaceTypes?: WorkplaceTypeFilter[],
+    workplaceType?: WorkplaceTypeFilter,
   ): JobFilter | null {
-    if (!workplaceTypes?.length) return null;
+    if (!workplaceType) return null;
 
-    const conditions: JobFilter[] = [];
-    if (workplaceTypes.includes(WorkplaceTypeFilter.REMOTE)) {
-      conditions.push({ location: /remote/i });
+    if (workplaceType === WorkplaceTypeFilter.REMOTE) {
+      return { location: /remote/i };
     }
-    if (workplaceTypes.includes(WorkplaceTypeFilter.HYBRID)) {
-      conditions.push({ location: /hybrid/i });
+    if (workplaceType === WorkplaceTypeFilter.HYBRID) {
+      return { location: /hybrid/i };
     }
-    if (workplaceTypes.includes(WorkplaceTypeFilter.ONSITE)) {
-      conditions.push({ location: { $not: /remote|hybrid/i } });
+    if (workplaceType === WorkplaceTypeFilter.ONSITE) {
+      return { location: { $not: /remote|hybrid/i } };
     }
 
-    return conditions.length ? { $or: conditions } : null;
+    return null;
   }
 
   private async getHrIdsByIndustries(
-    industries?: CompanyIndustry[],
+    industry?: CompanyIndustry,
   ): Promise<Types.ObjectId[] | undefined> {
-    if (!industries?.length) return undefined;
+    if (!industry) return undefined;
 
     const hrs = await this.hrModel
-      .find({ companyIndustry: { $in: industries } })
+      .find({ companyIndustry: industry })
       .select('_id')
       .exec();
     return hrs.map((hr) => hr._id);
@@ -279,23 +278,19 @@ export class JobService {
       });
     }
 
-    if (query.jobTypes?.length) {
-      filter.jobType = { $in: query.jobTypes };
+    if (query.jobType) {
+      filter.jobType = query.jobType;
     }
 
-    if (query.experienceLevels?.length) {
-      filter.experienceLevel = { $in: query.experienceLevels };
+    if (query.experienceLevel) {
+      filter.experienceLevel = query.experienceLevel;
     }
 
-    if (query.locations?.length) {
-      this.addAndFilter(filter, {
-        $or: query.locations.map((location) => ({
-          location: new RegExp(this.escapeRegex(location), 'i'),
-        })),
-      });
+    if (query.location?.trim()) {
+      filter.location = new RegExp(this.escapeRegex(query.location.trim()), 'i');
     }
 
-    const workplaceFilter = this.getWorkplaceTypeFilter(query.workplaceTypes);
+    const workplaceFilter = this.getWorkplaceTypeFilter(query.workplaceType);
     if (workplaceFilter) {
       this.addAndFilter(filter, workplaceFilter);
     }
@@ -313,7 +308,7 @@ export class JobService {
       filter.createdAt = { $gte: postedAfter };
     }
 
-    const hrIds = await this.getHrIdsByIndustries(query.industries);
+    const hrIds = await this.getHrIdsByIndustries(query.industry);
     if (hrIds) {
       filter.hr = { $in: hrIds };
     }
