@@ -3,6 +3,7 @@ import { Document, Types } from 'mongoose';
 import { JobStatus } from '../enums/jobStatus.enum';
 import { ExperienceLevel } from '../enums/experienceYears.enum';
 import { JobType } from '../enums/jobType.enum';
+import { InterviewQuestion } from './interview_questions.schema';
 
 export type JobDocument = Job & Document;
 
@@ -31,12 +32,6 @@ export class Job extends Document {
   })
   experienceLevel: ExperienceLevel;
 
-  @Prop({ required: true, min: 0 })
-  compensationMin: number;
-
-  @Prop({ required: true, min: 0 })
-  compensationMax: number;
-
   @Prop({ required: true })
   roleContext: string;
 
@@ -49,8 +44,8 @@ export class Job extends Document {
   @Prop({ type: [String], default: [] })
   keywords: string[];
 
-  @Prop({ type: [String], default: [] })
-  interviewerQuestions: string[];
+  @Prop({ type: [Types.ObjectId], default: [] })
+  interviewerQuestions: Types.ObjectId[];
 
   @Prop()
   documentAttachment?: string;

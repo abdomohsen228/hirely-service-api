@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -37,7 +38,7 @@ import {
 import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
-
+import { InterviewQuestion, InterviewQuestionDocument } from 'src/database/schemas/interview_questions.schema';
 @Injectable()
 export class JobService {
   private readonly defaultApplicationTotalStages = 5;
@@ -50,8 +51,8 @@ export class JobService {
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(UserJobScore.name)
-    private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    @InjectModel(UserJobScore.name) private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    @InjectModel(InterviewQuestion.name) private readonly interviewQuestionModel: Model<InterviewQuestionDocument>,
     private readonly aiMatchingService: AiMatchingService,
   ) { }
 
@@ -139,32 +140,93 @@ export class JobService {
     return hrProfile;
   }
 
+  private async createInterviewQuestions(
+    questions: string[],
+    hrId: Types.ObjectId,
+    jobId: Types.ObjectId
+  ): Promise<Types.ObjectId[]> {
+    const createdQuestions: Types.ObjectId[] = [];
+    for (const question of questions) {
+      const createdQuestion = await this.interviewQuestionModel.create({
+        question,
+        jobId,
+        answerDuration: 60, // Default duration in seconds
+        createdBy: hrId,
+      });
+      createdQuestions.push(createdQuestion._id);
+    }
+    return createdQuestions;
+  }
+
+  private async editInterviewQuestions(
+    questionIds: Types.ObjectId[],
+    questions: string[],
+    hrId: Types.ObjectId
+  ): Promise<void> {
+    const questionUpdates = questions.map((question, index) => ({
+      updateOne: {
+        filter: { _id: questionIds[index] },
+        update: { question, createdBy: hrId },
+      },
+    }));
+
+    await this.interviewQuestionModel.bulkWrite(questionUpdates);
+  };
+
+  private async getInterviewQuestionsByJobId(
+    jobId: Types.ObjectId
+  ): Promise<InterviewQuestionDocument[]> {
+    return this.interviewQuestionModel.find({ jobId }).exec();
+  }
+
+  private async clearInterviewQuestionsByJobId(jobId: Types.ObjectId, questionIds: Types.ObjectId[]): Promise<void> {
+    await this.interviewQuestionModel.deleteMany({ jobId, _id: { $nin: questionIds } }).exec();
+  }
+
+  public async getInterviewerQuestions(
+    user: UserDocument,
+    jobId: string
+  ): Promise<string[]> {
+    if(user.role === UserRole.CANDIDATE) {
+      const candidate = await this.getCandidateForUser(user);
+      const jobObjectId = this.parseJobObjectId(jobId);
+      const application = await this.jobApplicationModel
+        .findOne({ candidateId: candidate._id, jobId: jobObjectId })
+        .exec();
+      if (!application) {
+        throw new ForbiddenException('You can only view interviewer questions for jobs you have applied to');
+      }
+      if(application.status !== ApplicationStatus.INTERVIEW) {
+        throw new ForbiddenException('Interviewer questions are only available for applications in the interview stage');
+      }
+    }
+    const jobObjectId = this.parseJobObjectId(jobId);
+    const interviewQuestions = await this.getInterviewQuestionsByJobId(jobObjectId);
+    return interviewQuestions.map((q) => q.question);
+  }
+
   public async createJobPost(
     user: UserDocument,
     dto: CreateJobPostRequestDto,
   ): Promise<JobPostResponseDto> {
     this.assertHrUser(user);
     const hrProfile = await this.getHrProfileForUser(user);
-
-    if (dto.compensationMax < dto.compensationMin) {
-      throw new BadRequestException(
-        'compensationMax must be greater than or equal to compensationMin',
-      );
-    }
-
+    const interviewQuestionIds: Types.ObjectId[] = [];
+    if (dto.interviewerQuestions && dto.interviewerQuestions.length > 0) {
+      const createdQuestionIds = await this.createInterviewQuestions(dto.interviewerQuestions, hrProfile._id, null);
+      interviewQuestionIds.push(...createdQuestionIds);
+    };
     const created = await this.jobModel.create({
       title: dto.title,
       department: dto.department,
       jobType: dto.jobType,
       location: dto.location,
       experienceLevel: dto.experienceLevel,
-      compensationMin: dto.compensationMin,
-      compensationMax: dto.compensationMax,
       roleContext: dto.roleContext,
       coreResponsibilities: dto.coreResponsibilities,
       skills: dto.skills,
       keywords: dto.keywords,
-      interviewerQuestions: dto.interviewerQuestions ?? [],
+      interviewerQuestions: interviewQuestionIds,
       documentAttachment: dto.documentAttachment,
       companyName: hrProfile.companyName,
       hr: hrProfile._id,
@@ -173,6 +235,14 @@ export class JobService {
       endDate: dto.endDate,
       sprintDuration: dto.sprintDuration,
     });
+
+    // After job creation, update the interview questions with the jobId
+    if (interviewQuestionIds.length > 0) {
+      await this.interviewQuestionModel.updateMany(
+        { _id: { $in: interviewQuestionIds } },
+        { jobId: created._id }
+      ).exec();
+    }
 
     // Trigger AI matching for all candidates
     this.aiMatchingService.computeScoresForJob(created).catch((err) => {
@@ -557,22 +627,12 @@ export class JobService {
       throw new NotFoundException('Job not found');
     }
 
-    const nextMin = dto.compensationMin ?? doc.compensationMin;
-    const nextMax = dto.compensationMax ?? doc.compensationMax;
-    if (nextMax < nextMin) {
-      throw new BadRequestException(
-        'compensationMax must be greater than or equal to compensationMin',
-      );
-    }
-
     const assignableKeys: (keyof UpdateJobPostRequestDto)[] = [
       'title',
       'department',
       'jobType',
       'location',
       'experienceLevel',
-      'compensationMin',
-      'compensationMax',
       'roleContext',
       'coreResponsibilities',
       'skills',
@@ -583,7 +643,33 @@ export class JobService {
 
     for (const key of assignableKeys) {
       const value = dto[key];
-      if (value !== undefined) {
+      if (key === 'interviewerQuestions' && value !== undefined && Array.isArray(value)) {
+        const existingQuestionIds = doc.interviewerQuestions ?? [];
+
+        const updateCount = Math.min(
+          existingQuestionIds.length,
+          value.length
+        );
+        const questionIdsToUpdate = existingQuestionIds.slice(0, updateCount);
+        const questionsToUpdate = value.slice(0, updateCount);
+
+        if (questionIdsToUpdate.length > 0) {
+          await this.editInterviewQuestions(questionIdsToUpdate, questionsToUpdate, doc.hr);
+        }
+
+        let createdQuestionIds: Types.ObjectId[] = [];
+        if (value.length > existingQuestionIds.length) {
+          const questionsToCreate = value.slice(existingQuestionIds.length);
+          createdQuestionIds = await this.createInterviewQuestions(questionsToCreate, doc.hr, jobId);
+        }
+
+        doc.interviewerQuestions = [
+          ...questionIdsToUpdate,
+          ...createdQuestionIds,
+        ];
+        await this.clearInterviewQuestionsByJobId(jobId, doc.interviewerQuestions);
+      }
+      else if (value !== undefined) {
         (doc as unknown as Record<string, unknown>)[key] = value;
       }
     }
@@ -613,6 +699,10 @@ export class JobService {
     hrProfile?: HrDocument | null,
     isCandidateApply?: boolean,
   ): JobPostResponseDto {
+    let questions: string[] = [];
+    if (doc.interviewerQuestions && doc.interviewerQuestions.length > 0) {
+      questions = doc.interviewerQuestions.map((q) => q.toString());
+    }
     return {
       id: doc._id.toString(),
       title: doc.title,
@@ -620,8 +710,6 @@ export class JobService {
       jobType: doc.jobType,
       location: doc.location,
       experienceLevel: doc.experienceLevel,
-      compensationMin: doc.compensationMin,
-      compensationMax: doc.compensationMax,
       roleContext: doc.roleContext,
       coreResponsibilities: doc.coreResponsibilities,
       companySummary: hrProfile?.companySummary ?? null,
@@ -630,7 +718,7 @@ export class JobService {
       skills: doc.skills ?? [],
       keywords: doc.keywords ?? [],
       isCandidateApply: isCandidateApply ?? false,
-      interviewerQuestions: doc.interviewerQuestions ?? [],
+      interviewerQuestions: questions,
       documentAttachment: doc.documentAttachment,
       companyName: doc.companyName,
       createdBy: doc.createdBy.toString(),
