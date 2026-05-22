@@ -9,7 +9,9 @@ export class UploadProducer {
 
   async validateUpload(data: any) {
     console.log('Adding upload validation job to the queue with data:', data);
-    await this.uploadQueue.add(UploadJobs.VALIDATE_UPLOAD, data);
-    return { message: 'Upload validation job added to the queue' };
+    if( process.env.NODE_ENV === 'production') {
+      await this.uploadQueue.add(UploadJobs.VALIDATE_UPLOAD, data);
+      return { message: 'Upload validation job added to the queue' };
+    }
   }
 }

@@ -80,7 +80,15 @@ export class UploadService {
     }
 
     user.cvUrl = key;
-    user.cvStatus = PictureCVStatus.PENDING;
+    if(process.env.NODE_ENV === 'development')
+    {
+      user.cvStatus = PictureCVStatus.APPROVED;
+    }
+    else
+    {
+      user.cvStatus = PictureCVStatus.PENDING;
+    }
+    
     await user.save();
 
     return this.s3Service.createUploadUrl({
@@ -112,7 +120,14 @@ export class UploadService {
     }
 
     user.profilePictureUrl = key;
-    user.profilePictureStatus = PictureCVStatus.PENDING;
+    if(process.env.NODE_ENV === 'development')
+    {
+      user.profilePictureStatus = PictureCVStatus.APPROVED;
+    }
+    else{
+      user.profilePictureStatus = PictureCVStatus.PENDING;
+    }
+
     console.log('Profile Picture URL:', user.profilePictureUrl);
     await user.save();
 
@@ -174,6 +189,13 @@ export class UploadService {
       await this.s3Service.deleteFile({ key, bucket: this.bucket });
     }
 
+    
+    if(process.env.NODE_ENV === 'development')
+    {
+      user.profilePictureStatus = PictureCVStatus.APPROVED;
+      await user.save();
+    }
+
     return this.createProfilePictureUploadUrl({
       userId: params.userId,
       fileName: params.fileName,
@@ -201,6 +223,12 @@ export class UploadService {
 
     if (key) {
       await this.s3Service.deleteFile({ key, bucket: this.bucket });
+    }
+
+    if(process.env.NODE_ENV === 'development')
+    {
+      user.cvStatus = PictureCVStatus.APPROVED;
+      await user.save();
     }
 
     return this.createCvUploadUrl({
