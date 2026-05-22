@@ -45,18 +45,6 @@ export class CreateJobPostRequestDto {
   @IsOptional()
   experienceLevel?: ExperienceLevel;
 
-  @ApiProperty({ example: 8000 })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  compensationMin: number;
-
-  @ApiProperty({ example: 12000 })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  compensationMax?: number;
-
   @ApiProperty({
     example: 'You will own backend services for our hiring platform.',
   })

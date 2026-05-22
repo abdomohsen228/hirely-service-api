@@ -25,12 +25,6 @@ export class JobPostResponseDto {
   experienceLevel: ExperienceLevel;
 
   @ApiProperty()
-  compensationMin: number;
-
-  @ApiProperty()
-  compensationMax: number;
-
-  @ApiProperty()
   roleContext: string;
 
   @ApiProperty()

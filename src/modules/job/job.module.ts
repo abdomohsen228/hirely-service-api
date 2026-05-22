@@ -19,6 +19,7 @@ import { AuthModule } from 'src/modules/auth/auth.module';
 import { AiMatchingModule } from 'src/modules/ai-matching/ai-matching.module';
 import { JobController } from './job.controller';
 import { JobService } from './job.service';
+import { InterviewQuestion, InterviewQuestionSchema } from 'src/database/schemas/interview_questions.schema';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { JobService } from './job.service';
       { name: Hr.name, schema: HrSchema },
       { name: User.name, schema: UserSchema },
       { name: UserJobScore.name, schema: UserJobScoreSchema },
+      { name: InterviewQuestion.name, schema: InterviewQuestionSchema },
     ]),
   ],
   controllers: [JobController],
