@@ -8,6 +8,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ApplicationStatus } from 'src/database/enums/applicationStatus.enum';
+import { CompanyIndustry } from 'src/database/enums/companyIndustry.enum';
 import { JobStatus } from 'src/database/enums/jobStatus.enum';
 import { Job, JobDocument } from 'src/database/schemas/jobs.schema';
 import { Hr, HrDocument } from 'src/database/schemas/hr.schema';
@@ -22,7 +23,11 @@ import {
 } from 'src/database/schemas/candidate.schema';
 import { CreateJobPostRequestDto } from './dtos/request/createJobPostRequest.dto';
 import { ListMyApplicationsQueryDto } from './dtos/request/listMyApplicationsQuery.dto';
-import { ListJobPostsQueryDto } from './dtos/request/listJobPostsQuery.dto';
+import {
+  DatePostedFilter,
+  ListJobPostsQueryDto,
+  WorkplaceTypeFilter,
+} from './dtos/request/listJobPostsQuery.dto';
 import { UpdateHrJobApplicationRequestDto } from './dtos/request/updateHrJobApplicationRequest.dto';
 import { UpdateJobPostRequestDto } from './dtos/request/updateJobPostRequest.dto';
 import { JobApplicationResponseDto } from './dtos/response/jobApplicationResponse.dto';
@@ -38,7 +43,9 @@ import {
 import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
-import { InterviewQuestion, InterviewQuestionDocument } from 'src/database/schemas/interview_questions.schema';
+
+type JobFilter = Record<string, unknown>;
+
 @Injectable()
 export class JobService {
   private readonly defaultApplicationTotalStages = 5;
@@ -80,6 +87,64 @@ export class JobService {
       throw new BadRequestException('Invalid application id');
     }
     return new Types.ObjectId(id);
+  }
+
+  private escapeRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private addAndFilter(
+    filter: JobFilter,
+    condition: JobFilter,
+  ): void {
+    const existing = filter.$and as JobFilter[] | undefined;
+    filter.$and = existing ? [...existing, condition] : [condition];
+  }
+
+  private getDatePostedStartDate(
+    datePosted?: DatePostedFilter,
+  ): Date | undefined {
+    if (!datePosted) return undefined;
+
+    const now = new Date();
+    const daysByFilter: Record<DatePostedFilter, number> = {
+      [DatePostedFilter.LAST_24_HOURS]: 1,
+      [DatePostedFilter.LAST_7_DAYS]: 7,
+      [DatePostedFilter.LAST_30_DAYS]: 30,
+    };
+
+    now.setDate(now.getDate() - daysByFilter[datePosted]);
+    return now;
+  }
+
+  private getWorkplaceTypeFilter(
+    workplaceType?: WorkplaceTypeFilter,
+  ): JobFilter | null {
+    if (!workplaceType) return null;
+
+    if (workplaceType === WorkplaceTypeFilter.REMOTE) {
+      return { location: /remote/i };
+    }
+    if (workplaceType === WorkplaceTypeFilter.HYBRID) {
+      return { location: /hybrid/i };
+    }
+    if (workplaceType === WorkplaceTypeFilter.ONSITE) {
+      return { location: { $not: /remote|hybrid/i } };
+    }
+
+    return null;
+  }
+
+  private async getHrIdsByIndustries(
+    industry?: CompanyIndustry,
+  ): Promise<Types.ObjectId[] | undefined> {
+    if (!industry) return undefined;
+
+    const hrs = await this.hrModel
+      .find({ companyIndustry: industry })
+      .select('_id')
+      .exec();
+    return hrs.map((hr) => hr._id);
   }
 
   private async getCandidateForUser(
@@ -259,7 +324,7 @@ export class JobService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
-    let filter: Record<string, unknown> = {};
+    let filter: JobFilter = {};
 
     let candidateId: Types.ObjectId | null = null;
 
@@ -271,6 +336,55 @@ export class JobService {
       filter = { status: JobStatus.OPEN };
     } else {
       throw new ForbiddenException('Only HR and candidates can access jobs');
+    }
+
+    if (query.search?.trim()) {
+      const searchRegex = new RegExp(this.escapeRegex(query.search.trim()), 'i');
+      this.addAndFilter(filter, {
+        $or: [
+          { title: searchRegex },
+          { companyName: searchRegex },
+          { department: searchRegex },
+          { skills: searchRegex },
+          { keywords: searchRegex },
+        ],
+      });
+    }
+
+    if (query.jobType) {
+      filter.jobType = query.jobType;
+    }
+
+    if (query.experienceLevel) {
+      filter.experienceLevel = query.experienceLevel;
+    }
+
+    if (query.location?.trim()) {
+      filter.location = new RegExp(this.escapeRegex(query.location.trim()), 'i');
+    }
+
+    const workplaceFilter = this.getWorkplaceTypeFilter(query.workplaceType);
+    if (workplaceFilter) {
+      this.addAndFilter(filter, workplaceFilter);
+    }
+
+    const postedAfter = this.getDatePostedStartDate(query.datePosted);
+    if (postedAfter) {
+      filter.createdAt = { $gte: postedAfter };
+    }
+
+    const hrIds = await this.getHrIdsByIndustries(query.industry);
+    if (hrIds) {
+      filter.hr = { $in: hrIds };
+    }
+
+    if (candidateId && query.applied !== undefined) {
+      const applications = await this.jobApplicationModel
+        .find({ candidateId })
+        .select('jobId')
+        .exec();
+      const appliedIds = applications.map((application) => application.jobId);
+      filter._id = query.applied ? { $in: appliedIds } : { $nin: appliedIds };
     }
 
     const [docs, total] = await Promise.all([
