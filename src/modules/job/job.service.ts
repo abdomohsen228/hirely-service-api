@@ -295,14 +295,6 @@ export class JobService {
       this.addAndFilter(filter, workplaceFilter);
     }
 
-    const salaryFloor = query.salaryExpectation ?? query.minSalary;
-    if (salaryFloor !== undefined) {
-      filter.compensationMax = { $gte: salaryFloor };
-    }
-    if (query.maxSalary !== undefined) {
-      filter.compensationMin = { $lte: query.maxSalary };
-    }
-
     const postedAfter = this.getDatePostedStartDate(query.datePosted);
     if (postedAfter) {
       filter.createdAt = { $gte: postedAfter };

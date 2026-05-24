@@ -4,7 +4,6 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
-  IsNumber,
   IsOptional,
   IsString,
   Max,
@@ -94,32 +93,6 @@ export class ListJobPostsQueryDto {
   industry?: CompanyIndustry;
 
   @ApiPropertyOptional({
-    description:
-      'Minimum acceptable compensation. Returns jobs where compensationMax is at least this value.',
-    example: 120000,
-    minimum: 0,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  salaryExpectation?: number;
-
-  @ApiPropertyOptional({ example: 40000, minimum: 0 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  minSalary?: number;
-
-  @ApiPropertyOptional({ example: 300000, minimum: 0 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  maxSalary?: number;
-
-  @ApiPropertyOptional({
     enum: DatePostedFilter,
     description: 'Filter by created date',
     example: DatePostedFilter.LAST_7_DAYS,
@@ -157,13 +130,4 @@ export class ListJobPostsQueryDto {
   @IsBoolean()
   immediateStart?: boolean;
 
-  @ApiPropertyOptional({
-    description:
-      'Accepted for the Hidden Jobs chip. No effect until hidden jobs are stored per candidate.',
-    example: false,
-  })
-  @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  hiddenJobs?: boolean;
 }
