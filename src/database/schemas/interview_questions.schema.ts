@@ -9,18 +9,14 @@ export class InterviewQuestion extends Document {
   @Prop({ required: true })
   question: string;
 
-  @Prop({
-    required: true,
-    enum: QuestionTypes,
-    default: QuestionTypes.TEXT,
-  })
-  type: QuestionTypes;
-
   @Prop({ required: true })
   answerDuration: number; // Duration in seconds
 
-  @Prop({ required: true })
-  templateId: Types.ObjectId;
+  // @Prop({ required: true })
+  // templateId: Types.ObjectId;
+
+  @Prop({ required : false })
+  jobId: Types.ObjectId;
 
   @Prop({ required: true })
   createdBy: Types.ObjectId; // HR's ID
@@ -28,3 +24,5 @@ export class InterviewQuestion extends Document {
   @Prop({ default: 0 })
   order: number; // Order of the question in the interview template
 }
+
+export const InterviewQuestionSchema = SchemaFactory.createForClass(InterviewQuestion);

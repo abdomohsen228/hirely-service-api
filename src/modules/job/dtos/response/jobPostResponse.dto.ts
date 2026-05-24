@@ -3,6 +3,7 @@ import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
 import { JobType } from 'src/database/enums/jobType.enum';
 import { JobStatus } from 'src/database/enums/jobStatus.enum';
 import { CompanySize } from 'src/database/enums/companySize.enum';
+import { IsNumber } from 'class-validator';
 
 export class JobPostResponseDto {
   @ApiProperty()
@@ -22,12 +23,6 @@ export class JobPostResponseDto {
 
   @ApiProperty({ enum: ExperienceLevel })
   experienceLevel: ExperienceLevel;
-
-  @ApiProperty()
-  compensationMin: number;
-
-  @ApiProperty()
-  compensationMax: number;
 
   @ApiProperty()
   roleContext: string;
@@ -76,4 +71,14 @@ export class JobPostResponseDto {
 
   @ApiProperty()
   updatedAt: Date;
+
+  
+  @ApiProperty()
+  startDate: Date;
+
+  @ApiProperty()
+  endDate: Date;
+
+  @ApiProperty()
+  sprintDuration: number;
 }

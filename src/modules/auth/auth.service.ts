@@ -123,13 +123,15 @@ export class AuthService {
     console.log('User profile picture status:', user.profilePictureStatus);
     console.log('User CV status:', user.cvStatus);
 
-    if (!dto.profilePictureUrl) {
-      console.log("Profile picture URL isn't there");
-      await this.waitForFileApproval(userId, false);
-    } else {
-      await this.waitForFileApproval(userId);
+    if(process.env.NODE_ENV === 'production')
+    {
+      if (!dto.profilePictureUrl) {
+        console.log("Profile picture URL isn't there");
+        await this.waitForFileApproval(userId, false);
+      } else {
+        await this.waitForFileApproval(userId);
+      }
     }
-
     const candidate = await this.candidateModel.create({
       ...dto,
       username: emailPrefix,
