@@ -18,14 +18,15 @@ import * as ExcelJS from 'exceljs';
 import * as PDFDocument from 'pdfkit';
 import { ExportService } from '../export/export.service';
 import { ApplicationSummaryResponseDto } from './dtos/response/applicationSummaryResponse.dto';
-
+import { Types } from 'mongoose';
+import { JobDocument } from 'src/database/schemas/jobs.schema';
 @Injectable()
 export class JobDashboardService {
   constructor(
     @InjectModel('User') private readonly userModel: Model<UserDocument>,
     @InjectModel('JobApplication') private readonly jobApplicationModel: Model<JobApplicationDocument>,
     @InjectModel('Candidate') private readonly candidateModel: Model<CandidateDocument>,
-    @InjectModel('Job') private readonly jobModel: Model<any>,
+    @InjectModel('Job') private readonly jobModel: Model<JobDocument>,
     private readonly exportService: ExportService
   ) {}
 
@@ -36,25 +37,25 @@ export class JobDashboardService {
   }
 
   private async getJobApplicationCount(jobId: string): Promise<number> {
-    return this.jobApplicationModel.countDocuments({ jobId }).exec();
+    return this.jobApplicationModel.countDocuments({ jobId: new Types.ObjectId(jobId) }).exec();
   }
 
   private async getJobApplicationCountToday(jobId: string): Promise<number> {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     return this.jobApplicationModel.countDocuments({ 
-      jobId, 
+      jobId: new Types.ObjectId(jobId), 
       appliedAt: { $gte: startOfToday } 
     }).exec();
   }
 
   private async getShortlistedCandidatesCount(jobId: string): Promise<number> {
-    return this.jobApplicationModel.countDocuments({ jobId, status: 'shortlisted' }).exec();
+    return this.jobApplicationModel.countDocuments({ jobId: new Types.ObjectId(jobId), status: 'shortlisted' }).exec();
   }
 
   private async getAverageMatchScore(jobId: string): Promise<number> {
     const avgMatchScore = await this.jobApplicationModel.aggregate([
-      { $match: { jobId } },
+      { $match: { jobId: new Types.ObjectId(jobId) } },
       { $group: { _id: null, average: { $avg: '$matchScore' } } }
     ]).exec();
     return avgMatchScore.length > 0 ? avgMatchScore[0].average : 0;
@@ -62,7 +63,7 @@ export class JobDashboardService {
 
   private async getApplications(jobId: string, page: number, limit: number, applicationStatus?: string, matchScore?: number) {
     const skip = (page - 1) * limit;
-    const filter: any = { jobId };
+    const filter: any = { jobId: new Types.ObjectId(jobId) };
     if (applicationStatus) {
       filter.status = applicationStatus;
     }
@@ -83,7 +84,7 @@ export class JobDashboardService {
   }
 
   private async getFilteredApplicationsCount(jobId: string, applicationStatus?: string, matchScore?: number): Promise<number> {
-    const filter: any = { jobId };
+    const filter: any = { jobId: new Types.ObjectId(jobId) };
     if (applicationStatus) {
       filter.status = applicationStatus;
     }

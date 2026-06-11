@@ -43,7 +43,7 @@ import {
 import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
-
+import { InterviewQuestion, InterviewQuestionDocument } from 'src/database/schemas/interview_questions.schema';
 type JobFilter = Record<string, unknown>;
 
 @Injectable()
