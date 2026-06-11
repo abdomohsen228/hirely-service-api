@@ -42,7 +42,7 @@ import { ExportModule } from './modules/export/export.module';
     //     host: process.env.REDIS_HOST,
     //     port: parseInt(process.env.REDIS_PORT || '6379', 10),
     //     username: process.env.REDIS_USERNAME,
-    // //     password: process.env.REDIS_PASSWORD,
+    //     password: process.env.REDIS_PASSWORD,
     //     tls: {},
     //   },
     //   defaultJobOptions: {

@@ -122,25 +122,23 @@ export function buildHrProfileResponse(
   };
   const createdAt = toIso(withTimestamps.createdAt) ?? new Date().toISOString();
   const updatedAt = toIso(withTimestamps.updatedAt) ?? createdAt;
+  const companyWebsite = h.companyWebsite?.trim() ?? '';
 
   return createValidatedResponse(HrProfileResponseDto, {
     id: hr._id.toString(),
     userId: user.id,
     email: user.email,
     isProfileCompleted: user.isProfileCompleted,
-    profilePictureUrl: user.profilePictureUrl,
-    profilePictureStatus: user.profilePictureStatus,
     fullName: h.fullName,
     username: h.username,
     phoneNumber: h.phoneNumber,
     companyName: h.companyName,
-    companyWebsite: h.companyWebsite ?? "",
+    companyWebsite,
     companySummary: h.companySummary,
     companySize: h.companySize,
     companyIndustry: h.companyIndustry,
     jobTitle: h.jobTitle,
     accountStatus: h.accountStatus,
-    emailVerified: h.emailVerified ?? false,
     lastLogin: toIso(h.lastLogin),
     createdAt,
     updatedAt,

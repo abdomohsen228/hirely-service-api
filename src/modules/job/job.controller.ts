@@ -248,4 +248,19 @@ export class JobController {
   ): Promise<void> {
     return this.jobService.deleteJobPost(userPayload, id);
   }
+
+  @Get(':id/questions')
+  @ApiOperation({ summary: 'HR/Candidate: get interviewer questions for a job' })
+  @ApiParam({ name: 'id', description: 'Job id' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: [String],
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Job not found' })
+  public async getInterviewerQuestions(
+    @CurrentUser() userPayload: UserDocument,
+    @Param('id') id: string,
+  ): Promise<string[]> {
+    return this.jobService.getInterviewerQuestions(userPayload, id);
+  }
 }
