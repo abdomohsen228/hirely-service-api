@@ -74,68 +74,103 @@ export class EmailService {
     return this.transporter;
   }
 
-  async sendPasswordResetEmail(to: string, resetLink: string): Promise<void> {
-    this.logger.log(`Preparing password reset email for: ${to}`);
+  async sendPasswordResetEmail(
+    to: string,
+    resetLink: string,
+  ): Promise<void> {
 
-    const from =
-      this.configService.get<string>('MAIL_FROM') ?? 'noreply@hirely.com';
+    await this.sendMail({
+      to,
+      subject:
+        'Reset your Hirely password',
+      html: `
+        <p>
+          You requested a password reset.
+        </p>
 
-    const subject = 'Reset your Hirely password';
-
-    const html = `
-      <p>You requested a password reset for your Hirely account.</p>
-
-      <p>
         <a href="${resetLink}">
-          Click here to set a new password
+          Reset Password
         </a>
-      </p>
+      `,
+    });
+  }
 
-      <p>
-        This link expires in 1 hour.
-        If you did not request this email, you can ignore it.
-      </p>
-    `;
-
+  private async sendMail(options: {
+    to: string;
+    subject: string;
+    html: string;
+    from?: string;
+  }) {
     const transporter = this.getTransporter();
 
     if (!transporter) {
-      this.logger.error(
-        `Transporter creation failed. Reset link for ${to}: ${resetLink}`,
+      throw new Error('Transporter unavailable');
+    }
+
+    return transporter.sendMail({
+      from:
+        options.from ??
+        this.configService.get<string>(
+          'MAIL_FROM',
+        ),
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+    });
+  }
+
+  public async sendRecruiterEmail(
+    candidates: any[],
+    subject: string,
+    template: string,
+    companyName: string,
+  ) {
+    const promises = candidates.map(
+      async (candidate) => {
+
+        const html =
+          this.parseTemplate(
+            template,
+            {
+              name: candidate.name,
+              email: candidate.email,
+              jobTitle:
+                candidate.jobTitle,
+              companyName,
+            },
+          );
+
+        return this.sendMail({
+          to: candidate.email,
+
+          subject,
+
+          from: `${companyName} Recruitment <${this.configService.get('MAIL_FROM')}>`,
+
+          html,
+        });
+      },
+    );
+
+    await Promise.all(promises);
+  }
+
+  private parseTemplate(
+    template: string,
+    candidate: any,
+  ) {
+    return template
+      .replace(
+        /{{name}}/g,
+        candidate.name,
+      )
+      .replace(
+        /{{email}}/g,
+        candidate.email,
+      )
+      .replace(
+        /{{jobTitle}}/g,
+        candidate.jobTitle,
       );
-
-      return;
-    }
-
-    try {
-      this.logger.log(`Sending email to ${to}...`);
-
-      const info = await transporter.sendMail({
-        from,
-        to,
-        subject,
-        html,
-      });
-
-      this.logger.log(`Email sent successfully`);
-
-      console.log('EMAIL SENT INFO:', {
-        messageId: info.messageId,
-        response: info.response,
-        accepted: info.accepted,
-        rejected: info.rejected,
-        pending: info.pending,
-      });
-    } catch (error) {
-      this.logger.error('EMAIL SEND FAILED');
-
-      console.error('FULL EMAIL ERROR:', error);
-
-      if (error instanceof Error) {
-        console.error('ERROR MESSAGE:', error.message);
-
-        console.error('ERROR STACK:', error.stack);
-      }
-    }
   }
 }

@@ -9,6 +9,4 @@ export class CandidateDataDto {
     @ApiProperty()
     role: string;
 
-    @ApiProperty()
-    profilePictureUrl: string;
 }

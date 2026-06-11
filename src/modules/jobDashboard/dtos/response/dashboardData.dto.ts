@@ -6,7 +6,10 @@ import { Type } from "class-transformer";
 import { VisualIndicatorsDataDto } from "./visualIndicatorsData.dto";
 
 export class DashboardDataDto {
-    @ApiProperty({
+  @ApiProperty({ example: '12345', description: 'Unique identifier for the application' })
+  applicationId: string;
+  
+  @ApiProperty({
     type: CandidateDataDto,
   })
   @Type(() => CandidateDataDto)

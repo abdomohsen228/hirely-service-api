@@ -3,8 +3,23 @@ import { IsNotEmpty, IsString, IsOptional } from "class-validator";
 import { Types } from "mongoose";
 
 export class JobDashboardRequestDto {
-    @ApiProperty({ example: '507f1f77bcf86cd799439011', description: 'The unique identifier of the job' })
-    @IsString()
+    @ApiProperty({ example: 1, description: 'The page number for pagination', required: false })
+    @IsOptional()
     @IsNotEmpty()
-    jobId: Types.ObjectId;
+    page?: number;
+
+    @ApiProperty({ example: 10, description: 'The number of items per page for pagination', required: false })
+    @IsOptional()
+    @IsNotEmpty()
+    limit?: number;
+
+    @ApiProperty({ example: 'Pending', description: 'Filter applications by status', required: false })
+    @IsOptional()
+    @IsString()
+    applicationStatus?: string;
+
+    @ApiProperty({ example: '80', description: 'Filter applications by match score', required: false })
+    @IsOptional()
+    @IsString()
+    matchScore?: number;
 }

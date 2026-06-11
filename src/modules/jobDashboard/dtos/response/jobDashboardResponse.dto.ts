@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DashboardDataDto } from './dashboardData.dto';
+import { PaginationInfoDto } from './paginationInfo.dto';
 
 export class JobDashboardResponseDto {
   @ApiProperty()
@@ -18,7 +19,8 @@ export class JobDashboardResponseDto {
   averageMatchScore: number;
 
   @ApiProperty({ type: [DashboardDataDto]})
-    dashboardData: DashboardDataDto[];
+  dashboardData: DashboardDataDto[];
 
-
+  @ApiProperty({ type: PaginationInfoDto })
+  pagination: PaginationInfoDto;
 }
