@@ -22,7 +22,8 @@ import {
       { name: Candidate.name, schema: CandidateSchema },
     ]),
   ],
-  providers: [UploadService],
+  providers: [UploadService, // UploadProcessor
+  ],
   controllers: [UploadController],
   exports: [UploadService],
 })

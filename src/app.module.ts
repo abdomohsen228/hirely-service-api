@@ -11,6 +11,8 @@ import awsConfig from './config/aws.config';
 import { ProfileModule } from './modules/profile/profile.module';
 import { AiMatchingModule } from './modules/ai-matching/ai-matching.module';
 import { EmailModule } from './modules/email/email.module';
+import { JobDashboardModule } from './modules/jobDashboard/jobDashboard.module';
+import { ExportModule } from './modules/export/export.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -33,8 +35,9 @@ import { EmailModule } from './modules/email/email.module';
     UploadModule,
     ProfileModule,
     EmailModule,
-  
-    // BullModule.forRoot({  //-- Remove when test finished
+    JobDashboardModule,
+    ExportModule,
+    // BullModule.forRoot({
     //   connection: {
     //     host: process.env.REDIS_HOST,
     //     port: parseInt(process.env.REDIS_PORT || '6379', 10),
