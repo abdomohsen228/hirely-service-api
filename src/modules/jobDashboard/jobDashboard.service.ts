@@ -20,6 +20,8 @@ import { ExportService } from '../export/export.service';
 import { ApplicationSummaryResponseDto } from './dtos/response/applicationSummaryResponse.dto';
 import { Types } from 'mongoose';
 import { JobDocument } from 'src/database/schemas/jobs.schema';
+import { ApplicationStatus } from 'src/database/enums/applicationStatus.enum';
+
 @Injectable()
 export class JobDashboardService {
   constructor(
@@ -163,6 +165,12 @@ export class JobDashboardService {
       throw new ForbiddenException('Application not found');
     }
     application.status = dto.applicationStatus;
+    if (dto.applicationStatus === ApplicationStatus.ACCEPTED) {
+      application.hiredAt = new Date();
+    }
+    if(dto.applicationStatus === ApplicationStatus.INTERVIEW){
+      application.interviewed = true;
+    }
     await application.save();
     const candidateInfo = await this.getCandidateInfo(String(application.candidateId));
 

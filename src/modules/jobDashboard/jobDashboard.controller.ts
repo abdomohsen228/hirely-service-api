@@ -12,6 +12,8 @@ import { DashboardDataDto } from './dtos/response/dashboardData.dto';
 import { jobDasboardExportRequestDto } from './dtos/request/jobDashboardExportRequest.dto';
 import { Response } from 'express';
 import { ApplicationSummaryResponseDto } from './dtos/response/applicationSummaryResponse.dto';
+
+@ApiTags('JobDashboard')
 @ApiBearerAuth('access-token')
 @UseGuards(AuthGuard)
 @Controller('jobs/:jobId/dashboard')
