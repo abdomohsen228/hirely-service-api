@@ -31,7 +31,7 @@ import { ListMyApplicationsQueryDto } from './dtos/request/listMyApplicationsQue
 import { UpdateHrJobApplicationRequestDto } from './dtos/request/updateHrJobApplicationRequest.dto';
 import { UpdateJobPostRequestDto } from './dtos/request/updateJobPostRequest.dto';
 import { JobPostResponseDto } from './dtos/response/jobPostResponse.dto';
-import { MyApplicationsStatsResponseDto } from './dtos/response/myApplicationsStatsResponse.dto';
+import { MyApplicationsStatsResponseDto } from '../applications/dtos/response/myApplicationsStatsResponse.dto';
 import { MyJobApplicationItemResponseDto } from './dtos/response/myJobApplicationItemResponse.dto';
 import { PaginatedJobListResponseDto } from './dtos/response/paginatedJobListResponse.dto';
 import { PaginatedMyJobApplicationsResponseDto } from './dtos/response/paginatedMyJobApplicationsResponse.dto';
@@ -42,7 +42,7 @@ import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobIte
 @UseGuards(AuthGuard)
 @Controller('jobs')
 export class JobController {
-  constructor(private readonly jobService: JobService) {}
+  constructor(private readonly jobService: JobService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -101,62 +101,6 @@ export class JobController {
   })
   public async getRecentJobs(): Promise<JobPostResponseDto[]> {
     return this.jobService.getRecentJobs();
-  }
-
-  @Get('applications/me/stats')
-  @ApiOperation({
-    summary:
-      'Candidate: tracker stats (totals, upcoming interviews, best match)',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    type: MyApplicationsStatsResponseDto,
-  })
-  public async getMyApplicationStats(
-    @CurrentUser() userPayload: UserDocument,
-  ): Promise<MyApplicationsStatsResponseDto> {
-    return this.jobService.getMyApplicationStats(userPayload);
-  }
-
-  @Get('applications/me')
-  @ApiOperation({ summary: 'Candidate: list my job applications (paginated)' })
-  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-  @ApiQuery({
-    name: 'status',
-    required: false,
-    enum: ApplicationStatus,
-    description: 'Filter by application status',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    type: PaginatedMyJobApplicationsResponseDto,
-  })
-  public async listMyApplications(
-    @CurrentUser() userPayload: UserDocument,
-    @Query() query: ListMyApplicationsQueryDto,
-  ): Promise<PaginatedMyJobApplicationsResponseDto> {
-    return this.jobService.listMyApplications(userPayload, query);
-  }
-
-  @Get('applications/me/:applicationId')
-  @ApiOperation({
-    summary: 'Candidate: get one of my applications (track status + job)',
-  })
-  @ApiParam({ name: 'applicationId', description: 'Job application id' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    type: MyJobApplicationItemResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Application not found',
-  })
-  public async getMyApplicationById(
-    @CurrentUser() userPayload: UserDocument,
-    @Param('applicationId') applicationId: string,
-  ): Promise<MyJobApplicationItemResponseDto> {
-    return this.jobService.getMyApplicationById(userPayload, applicationId);
   }
 
   @Get(':id')
