@@ -32,7 +32,7 @@ import { UpdateHrJobApplicationRequestDto } from './dtos/request/updateHrJobAppl
 import { UpdateJobPostRequestDto } from './dtos/request/updateJobPostRequest.dto';
 import { JobApplicationResponseDto } from './dtos/response/jobApplicationResponse.dto';
 import { JobPostResponseDto } from './dtos/response/jobPostResponse.dto';
-import { MyApplicationsStatsResponseDto } from './dtos/response/myApplicationsStatsResponse.dto';
+import { MyApplicationsStatsResponseDto } from '../applications/dtos/response/myApplicationsStatsResponse.dto';
 import { MyJobApplicationItemResponseDto } from './dtos/response/myJobApplicationItemResponse.dto';
 import { PaginatedJobListResponseDto } from './dtos/response/paginatedJobListResponse.dto';
 import { PaginatedMyJobApplicationsResponseDto } from './dtos/response/paginatedMyJobApplicationsResponse.dto';
@@ -48,7 +48,7 @@ type JobFilter = Record<string, unknown>;
 
 @Injectable()
 export class JobService {
-  private readonly defaultApplicationTotalStages = 5;
+  private readonly defaultApplicationTotalStages = 4;
 
   constructor(
     @InjectModel(JobApplication.name)
@@ -252,7 +252,7 @@ export class JobService {
     user: UserDocument,
     jobId: string
   ): Promise<string[]> {
-    if(user.role === UserRole.CANDIDATE) {
+    if (user.role === UserRole.CANDIDATE) {
       const candidate = await this.getCandidateForUser(user);
       const jobObjectId = this.parseJobObjectId(jobId);
       const application = await this.jobApplicationModel
@@ -261,7 +261,7 @@ export class JobService {
       if (!application) {
         throw new ForbiddenException('You can only view interviewer questions for jobs you have applied to');
       }
-      if(application.status !== ApplicationStatus.INTERVIEW) {
+      if (application.status !== ApplicationStatus.INTERVIEW) {
         throw new ForbiddenException('Interviewer questions are only available for applications in the interview stage');
       }
     }
@@ -299,6 +299,8 @@ export class JobService {
       startDate: dto.startDate,
       endDate: dto.endDate,
       sprintDuration: dto.sprintDuration,
+      interviewStartDate: new Date(dto.endDate.getTime() + 2 * 24 * 60 * 60 * 1000),
+      interviewEndDate: new Date(dto.startDate.getTime() + dto.sprintDuration * 24 * 60 * 60 * 1000),
     });
 
     // After job creation, update the interview questions with the jobId
@@ -492,124 +494,6 @@ export class JobService {
       ? await this.hrModel.findById(doc.hr).exec()
       : null;
     return this.toResponse(doc, hrProfile, isCandidateApply);
-  }
-
-  public async listMyApplications(
-    user: UserDocument,
-    query: ListMyApplicationsQueryDto,
-  ): Promise<PaginatedMyJobApplicationsResponseDto> {
-    const candidate = await this.getCandidateForUser(user);
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
-    const skip = (page - 1) * limit;
-
-    const filter: Record<string, unknown> = { candidateId: candidate._id };
-    if (query.status) {
-      filter.status = query.status;
-    }
-
-    const [applications, total] = await Promise.all([
-      this.jobApplicationModel
-        .find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .exec(),
-      this.jobApplicationModel.countDocuments(filter).exec(),
-    ]);
-
-    const uniqueJobIds = Array.from(
-      new Set(applications.map((application) => application.jobId.toString())),
-    ).map((value) => new Types.ObjectId(value));
-
-    const jobs = await this.jobModel
-      .find({ _id: { $in: uniqueJobIds } })
-      .exec();
-    const jobsById = new Map(jobs.map((job) => [job._id.toString(), job]));
-
-    const items: MyJobApplicationItemResponseDto[] = applications.map(
-      (application) => {
-        const matchedJob = jobsById.get(application.jobId.toString());
-        return {
-          application: this.toApplicationResponse(application),
-          job: matchedJob ? this.toResponse(matchedJob) : null,
-        };
-      },
-    );
-
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
-    };
-  }
-
-  public async getMyApplicationStats(
-    user: UserDocument,
-  ): Promise<MyApplicationsStatsResponseDto> {
-    const candidate = await this.getCandidateForUser(user);
-    const candidateId = candidate._id;
-
-    const [totalApplied, upcomingInterviews, bestDoc] = await Promise.all([
-      this.jobApplicationModel.countDocuments({ candidateId }).exec(),
-      this.jobApplicationModel
-        .countDocuments({
-          candidateId,
-          status: ApplicationStatus.INTERVIEW,
-          nextStepAt: { $gt: new Date() },
-        })
-        .exec(),
-      this.jobApplicationModel
-        .findOne({ candidateId, matchScore: { $ne: null, $exists: true } })
-        .sort({ matchScore: -1 })
-        .select('matchScore')
-        .lean()
-        .exec(),
-    ]);
-
-    const bestMatchScore =
-      bestDoc && typeof bestDoc.matchScore === 'number'
-        ? bestDoc.matchScore
-        : null;
-
-    let matchScoreHeadline: string | null = null;
-    if (bestMatchScore != null) {
-      if (bestMatchScore >= 95) {
-        matchScoreHeadline = 'Top 5% Candidate';
-      } else if (bestMatchScore >= 90) {
-        matchScoreHeadline = 'Top 10% Candidate';
-      }
-    }
-
-    return {
-      totalApplied,
-      upcomingInterviews,
-      bestMatchScore,
-      matchScoreHeadline,
-    };
-  }
-
-  public async getMyApplicationById(
-    user: UserDocument,
-    applicationId: string,
-  ): Promise<MyJobApplicationItemResponseDto> {
-    const candidate = await this.getCandidateForUser(user);
-    const appObjectId = this.parseApplicationObjectId(applicationId);
-
-    const application = await this.jobApplicationModel
-      .findOne({ _id: appObjectId, candidateId: candidate._id })
-      .exec();
-    if (!application) {
-      throw new NotFoundException('Application not found');
-    }
-
-    const job = await this.jobModel.findById(application.jobId).exec();
-    return {
-      application: this.toApplicationResponse(application),
-      job: job ? this.toResponse(job) : null,
-    };
   }
 
   public async applyToJob(

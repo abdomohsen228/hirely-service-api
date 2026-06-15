@@ -71,11 +71,13 @@ export class Job extends Document {
 
   @Prop({
     required: true,
+    description: 'Start date of job being posted as open'
   })
   startDate: Date;
 
   @Prop({
     required: true,
+    description: 'End date of job being posted as open'
   })
   endDate: Date;
 
@@ -88,8 +90,25 @@ export class Job extends Document {
   })
   sprintDuration: number;
 
+  @Prop({
+    required: true,
+    description: 'Start date of Interview phase '
+  })
+  interviewStartDate: Date;
+
+  @Prop({
+    required: true,
+    description: 'End date of Interview phase'
+  })
+  interviewEndDate: Date;
+
 
 }
 
 
 export const JobSchema = SchemaFactory.createForClass(Job);
+
+JobSchema.index({
+  status: 1,
+  endDate: 1,
+})
