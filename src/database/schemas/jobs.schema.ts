@@ -102,6 +102,12 @@ export class Job extends Document {
   })
   interviewEndDate: Date;
 
+  @Prop({
+    required: true,
+    default: false
+  })
+  interviewStatus: boolean;
+
 
 }
 
@@ -111,4 +117,14 @@ export const JobSchema = SchemaFactory.createForClass(Job);
 JobSchema.index({
   status: 1,
   endDate: 1,
+})
+
+JobSchema.index({
+  interviewStatus: 1,
+  interviewStartDate: 1
+})
+
+JobSchema.index({
+  interviewStatus: 1,
+  interviewEndDate: 1,
 })

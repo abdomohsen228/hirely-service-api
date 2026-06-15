@@ -15,6 +15,7 @@ import { PaginatedMyJobApplicationsResponseDto } from '../job/dtos/response/pagi
 import { ListMyApplicationsQueryDto } from '../job/dtos/request/listMyApplicationsQuery.dto';
 import { JobApplicationResponseDto } from '../job/dtos/response/jobApplicationResponse.dto';
 import { JobPostResponseDto } from '../job/dtos/response/jobPostResponse.dto';
+import { JobStatus } from 'src/database/enums/jobStatus.enum';
 
 @Injectable()
 export class ApplicationsService {
@@ -289,6 +290,67 @@ export class ApplicationsService {
             createdAt: doc.get('createdAt'),
             updatedAt: doc.get('updatedAt'),
         };
+    }
+
+    // move applications from APPLIED to cv screening phase
+    public async updateApplicationStatuses(): Promise<void> {
+        const updatedJobs =  await this.jobModel
+            .find({
+                status: JobStatus.CLOSED ,
+                interviewStartDate: { $gt: new Date() },
+            })
+            .exec();
+        for (const job of updatedJobs) {
+            await this.jobApplicationModel.updateMany(
+                { jobId: job._id, status: ApplicationStatus.APPLIED },
+                { $set: { 
+                    status: ApplicationStatus.IN_REVIEW,
+                    currentStage: 2,
+                    progressPercent: this.computeProgressPercent(2, this.defaultApplicationTotalStages),
+                    nextStepTitle: 'In review',
+                } },
+            );
+        }
+    }
+
+    async moveApplicationsTointerview(): Promise<void> {
+        const updatedJobs =  await this.jobModel
+            .find({
+                interviewStatus: true,
+            })
+            .exec();
+        for (const job of updatedJobs) {
+            await this.jobApplicationModel.updateMany(
+                { jobId: job._id, status: ApplicationStatus.IN_REVIEW },
+                { $set: { 
+                    status: ApplicationStatus.INTERVIEW,
+                    currentStage: 3,
+                    progressPercent: this.computeProgressPercent(3, this.defaultApplicationTotalStages),
+                    nextStepTitle: 'Interview phase',
+                } },
+            );
+        }
+    }
+
+    public async rejectOverDueInterviews(){
+        const updatedJobs =  await this.jobModel
+            .find({
+                interviewStatus: false,
+                interviewEndDate: {$eq: new Date()}
+            })
+            .exec();
+        
+            for(const job of updatedJobs){
+               await this.jobApplicationModel.updateMany(
+                { jobId: job._id, status: ApplicationStatus.INTERVIEW, interviewed: false },
+                { $set: { 
+                    status: ApplicationStatus.REJECTED,
+                    currentStage: 4,
+                    progressPercent: this.computeProgressPercent(4, this.defaultApplicationTotalStages),
+                    nextStepTitle: 'Missed Interview',
+                } },
+            ); 
+            }
     }
 
 

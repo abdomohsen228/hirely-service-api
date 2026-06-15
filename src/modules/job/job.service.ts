@@ -767,4 +767,42 @@ export class JobService {
       updatedAt: doc.get('updatedAt'),
     };
   }
+
+  public async closeExpiredJobs(): Promise<void> {
+    const now = new Date();
+    await this.jobModel
+      .updateMany(
+        { status: JobStatus.OPEN, endDate: { $lte: now } },
+        { status: JobStatus.CLOSED },
+      )
+      .exec();
+  }
+
+  public async openInterviewPhase(): Promise<void> {
+    const now = new Date();
+    await this.jobModel
+      .updateMany(
+        {
+          interviewStatus: false,
+          interviewStartDate: { $lte: now },
+        },
+        { interviewStatus: true },
+      )
+      .exec();
+  }
+
+  public async closeInterviewPhase(): Promise<void> {
+    const now = new Date();
+    await this.jobModel
+      .updateMany(
+        {
+          interviewStatus: true,
+          interviewEndDate: { $lte: now },
+        },
+        { interviewStatus: false },
+      )
+      .exec();
+  }
+
+  
 }
