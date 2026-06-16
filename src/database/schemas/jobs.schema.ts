@@ -4,7 +4,7 @@ import { JobStatus } from '../enums/jobStatus.enum';
 import { ExperienceLevel } from '../enums/experienceYears.enum';
 import { JobType } from '../enums/jobType.enum';
 import { InterviewQuestion } from './interview_questions.schema';
-
+import { WorkplaceTypeFilter } from '../enums/workplaceType.enum';
 export type JobDocument = Job & Document;
 
 @Schema({ timestamps: true })
@@ -103,10 +103,15 @@ export class Job extends Document {
   interviewEndDate: Date;
 
   @Prop({
-    required: true,
     default: false
   })
   interviewStatus: boolean;
+  
+  @Prop({
+    required: true,
+    description: 'the plcae candidate will work from'
+  })
+  workplaceType:WorkplaceTypeFilter;
 
 
 }

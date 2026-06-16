@@ -4,6 +4,7 @@ import { JobType } from 'src/database/enums/jobType.enum';
 import { JobStatus } from 'src/database/enums/jobStatus.enum';
 import { CompanySize } from 'src/database/enums/companySize.enum';
 import { IsNumber } from 'class-validator';
+import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
 
 export class JobPostResponseDto {
   @ApiProperty()
@@ -71,6 +72,9 @@ export class JobPostResponseDto {
 
   @ApiProperty()
   updatedAt: Date;
+
+  @ApiProperty()
+  workplaceType: WorkplaceTypeFilter;
 
   
   @ApiProperty()
