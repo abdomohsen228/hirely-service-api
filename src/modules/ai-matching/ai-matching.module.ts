@@ -11,6 +11,7 @@ import {
   Candidate,
   CandidateSchema,
 } from 'src/database/schemas/candidate.schema';
+import { JobApplication, JobApplicationSchema } from 'src/database/schemas/application.schema';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import {
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
       { name: Candidate.name, schema: CandidateSchema },
+      { name: JobApplication.name, schema: JobApplicationSchema}
     ]),
   ],
   providers: [AiMatchingService],

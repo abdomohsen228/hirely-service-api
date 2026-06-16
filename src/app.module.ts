@@ -13,6 +13,7 @@ import { AiMatchingModule } from './modules/ai-matching/ai-matching.module';
 import { EmailModule } from './modules/email/email.module';
 import { JobDashboardModule } from './modules/jobDashboard/jobDashboard.module';
 import { ExportModule } from './modules/export/export.module';
+import { ApplicationsModule } from './modules/applications/applications.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,6 +38,7 @@ import { ExportModule } from './modules/export/export.module';
     EmailModule,
     JobDashboardModule,
     ExportModule,
+    ApplicationsModule,
     // BullModule.forRoot({
     //   connection: {
     //     host: process.env.REDIS_HOST,
@@ -61,4 +63,4 @@ import { ExportModule } from './modules/export/export.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
