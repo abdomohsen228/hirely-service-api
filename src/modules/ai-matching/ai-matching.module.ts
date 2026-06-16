@@ -11,7 +11,8 @@ import {
   Candidate,
   CandidateSchema,
 } from 'src/database/schemas/candidate.schema';
-
+import {AiMatchingScheduler} from './ai-matching.scheduler';
+import { JobApplication, JobApplicationSchema } from 'src/database/schemas/application.schema';
 @Module({
   imports: [
     HttpModule,
@@ -19,9 +20,10 @@ import {
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
       { name: Candidate.name, schema: CandidateSchema },
+      { name: JobApplication.name, schema: JobApplicationSchema },
     ]),
   ],
-  providers: [AiMatchingService],
+  providers: [AiMatchingService, AiMatchingScheduler ],
   exports: [AiMatchingService],
 })
 export class AiMatchingModule {}

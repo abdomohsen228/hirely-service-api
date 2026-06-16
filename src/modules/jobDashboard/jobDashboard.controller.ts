@@ -88,4 +88,7 @@ export class JobDashboardController {
   ): Promise<ApplicationSummaryResponseDto> {
     return this.jobDashboardService.getApplicationSummary(userPayload, applicationId);
   }
+
+
+  // end job by sending feedbacks to the candidates and final results
 }
