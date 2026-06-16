@@ -12,17 +12,11 @@ import {
 import { CompanyIndustry } from 'src/database/enums/companyIndustry.enum';
 import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
 import { JobType } from 'src/database/enums/jobType.enum';
-
+import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
 export enum DatePostedFilter {
   LAST_24_HOURS = '24h',
   LAST_7_DAYS = '7d',
   LAST_30_DAYS = '30d',
-}
-
-export enum WorkplaceTypeFilter {
-  REMOTE = 'REMOTE',
-  HYBRID = 'HYBRID',
-  ONSITE = 'ONSITE',
 }
 
 export class ListJobPostsQueryDto {
@@ -110,24 +104,5 @@ export class ListJobPostsQueryDto {
   @IsBoolean()
   applied?: boolean;
 
-  @ApiPropertyOptional({
-    description:
-      'Accepted for Smart Discovery UI. No effect until the job schema stores this data.',
-    example: false,
-  })
-  @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  sponsorshipProvided?: boolean;
-
-  @ApiPropertyOptional({
-    description:
-      'Accepted for Smart Discovery UI. No effect until the job schema stores this data.',
-    example: true,
-  })
-  @IsOptional()
-  @Type(() => Boolean)
-  @IsBoolean()
-  immediateStart?: boolean;
 
 }
