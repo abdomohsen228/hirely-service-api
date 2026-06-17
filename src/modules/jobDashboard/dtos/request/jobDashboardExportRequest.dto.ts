@@ -4,7 +4,7 @@ import { Types } from "mongoose";
 import { DashboardExportFormat } from "src/database/enums/dashboardExportFormate.enum";
 
 export class jobDasboardExportRequestDto {
-    @ApiProperty({ example: DashboardExportFormat.CSV, description: 'The format to export the dashboard data (csv or excel)' })
+    @ApiProperty({ example: DashboardExportFormat.EXCEL, description: 'The format to export the dashboard data (csv or excel)' })
     @IsString()
     @IsNotEmpty()
     format: DashboardExportFormat;

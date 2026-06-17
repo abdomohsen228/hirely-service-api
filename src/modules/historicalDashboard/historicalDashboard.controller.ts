@@ -24,7 +24,7 @@ export class HistoricalDashboardController {
     description: 'Historical dashboard data retrieved successfully',
     type: HistoricalDashboardResponseDto,
     })
-    public async getJobDashboard(
+    public async getHistoricalashboard(
     @CurrentUser() userPayload: UserDocument,
     @Query() query: HistoricalDashboardRequestDto
     ): Promise<HistoricalDashboardResponseDto> {
@@ -32,7 +32,7 @@ export class HistoricalDashboardController {
     }
 
     // get all open jobs
-    
+
 
 
     // export dashboard as pdf, csv, xlsx
