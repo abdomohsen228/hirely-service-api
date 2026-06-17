@@ -26,7 +26,6 @@ import { ListMyApplicationsQueryDto } from './dtos/request/listMyApplicationsQue
 import {
   DatePostedFilter,
   ListJobPostsQueryDto,
-  WorkplaceTypeFilter,
 } from './dtos/request/listJobPostsQuery.dto';
 import { UpdateHrJobApplicationRequestDto } from './dtos/request/updateHrJobApplicationRequest.dto';
 import { UpdateJobPostRequestDto } from './dtos/request/updateJobPostRequest.dto';
@@ -45,6 +44,7 @@ import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
 import { InterviewQuestion, InterviewQuestionDocument } from 'src/database/schemas/interview_questions.schema';
 type JobFilter = Record<string, unknown>;
+import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
 
 @Injectable()
 export class JobService {
@@ -299,6 +299,7 @@ export class JobService {
       startDate: dto.startDate,
       endDate: dto.endDate,
       sprintDuration: dto.sprintDuration,
+      workplaceType: dto.workplaceType,
       interviewStartDate: new Date(dto.endDate.getTime() + 2 * 24 * 60 * 60 * 1000),
       interviewEndDate: new Date(dto.startDate.getTime() + dto.sprintDuration * 24 * 60 * 60 * 1000),
     });
@@ -637,6 +638,7 @@ export class JobService {
       'keywords',
       'interviewerQuestions',
       'documentAttachment',
+      'workplaceType'
     ];
 
     for (const key of assignableKeys) {
@@ -725,6 +727,7 @@ export class JobService {
       endDate: doc.endDate,
       sprintDuration: doc.sprintDuration,
       applicationCount: doc.applicationCount,
+      workplaceType:doc.workplaceType,
       createdAt: doc.get('createdAt'),
       updatedAt: doc.get('updatedAt'),
     };
@@ -767,4 +770,42 @@ export class JobService {
       updatedAt: doc.get('updatedAt'),
     };
   }
+
+  public async closeExpiredJobs(): Promise<void> {
+    const now = new Date();
+    await this.jobModel
+      .updateMany(
+        { status: JobStatus.OPEN, endDate: { $lte: now } },
+        { status: JobStatus.CLOSED },
+      )
+      .exec();
+  }
+
+  public async openInterviewPhase(): Promise<void> {
+    const now = new Date();
+    await this.jobModel
+      .updateMany(
+        {
+          interviewStatus: false,
+          interviewStartDate: { $lte: now },
+        },
+        { interviewStatus: true },
+      )
+      .exec();
+  }
+
+  public async closeInterviewPhase(): Promise<void> {
+    const now = new Date();
+    await this.jobModel
+      .updateMany(
+        {
+          interviewStatus: true,
+          interviewEndDate: { $lte: now },
+        },
+        { interviewStatus: false },
+      )
+      .exec();
+  }
+
+  
 }

@@ -4,7 +4,7 @@ import { JobStatus } from '../enums/jobStatus.enum';
 import { ExperienceLevel } from '../enums/experienceYears.enum';
 import { JobType } from '../enums/jobType.enum';
 import { InterviewQuestion } from './interview_questions.schema';
-
+import { WorkplaceTypeFilter } from '../enums/workplaceType.enum';
 export type JobDocument = Job & Document;
 
 @Schema({ timestamps: true })
@@ -102,6 +102,17 @@ export class Job extends Document {
   })
   interviewEndDate: Date;
 
+  @Prop({
+    default: false
+  })
+  interviewStatus: boolean;
+  
+  @Prop({
+    required: true,
+    description: 'the plcae candidate will work from'
+  })
+  workplaceType:WorkplaceTypeFilter;
+
 
 }
 
@@ -111,4 +122,14 @@ export const JobSchema = SchemaFactory.createForClass(Job);
 JobSchema.index({
   status: 1,
   endDate: 1,
+})
+
+JobSchema.index({
+  interviewStatus: 1,
+  interviewStartDate: 1
+})
+
+JobSchema.index({
+  interviewStatus: 1,
+  interviewEndDate: 1,
 })

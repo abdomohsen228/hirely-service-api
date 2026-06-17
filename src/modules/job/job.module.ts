@@ -20,6 +20,7 @@ import { AiMatchingModule } from 'src/modules/ai-matching/ai-matching.module';
 import { JobController } from './job.controller';
 import { JobService } from './job.service';
 import { InterviewQuestion, InterviewQuestionSchema } from 'src/database/schemas/interview_questions.schema';
+import { JobScheduler } from './job.scheduler';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { InterviewQuestion, InterviewQuestionSchema } from 'src/database/schemas
     ]),
   ],
   controllers: [JobController],
-  providers: [JobService],
+  providers: [JobService, JobScheduler],
   exports: [JobService],
 })
 export class JobModule {}
