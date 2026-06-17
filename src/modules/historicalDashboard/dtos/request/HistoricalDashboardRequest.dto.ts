@@ -1,19 +1,23 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsOptional,IsNotEmpty, IsString } from "class-validator";
+import { InflowFilter } from "src/database/enums/historicalDashboardInflowFilter.enum";
+import { PaginationRequestDto } from "./PaginationRequest.dto";
 export class HistoricalDashboardRequestDto{
-    @ApiProperty({ example: 1, description: 'The page number for pagination', required: false })
+
+    @ApiProperty({ example: InflowFilter.LAST_6_MONTHS, description: 'The application volume for the last 6 months', default: InflowFilter.LAST_6_MONTHS })
     @IsOptional()
     @IsNotEmpty()
-    page?: number;
+    inflow_filter?: InflowFilter;
 
-    @ApiProperty({ example: 10, description: 'The number of items per page for pagination', required: false })
+    @ApiProperty({ description: 'The pagination information for the volume by department section'})
     @IsOptional()
     @IsNotEmpty()
-    limit?: number;
+    volume_pagination?: PaginationRequestDto;
 
-    @ApiProperty({ example: 'Pending', description: 'Filter applications by status', required: false })
+    @ApiProperty({ description: 'The pagination information for the active hiring process section'})
     @IsOptional()
-    @IsString()
-    applicationStatus?: string;
+    @IsNotEmpty()
+    active_pagination?: PaginationRequestDto;
+
 
 }

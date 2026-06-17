@@ -18,6 +18,7 @@ import {
   UserJobScore,
   UserJobScoreSchema,
 } from 'src/database/schemas/user_job_score.schema';
+import { JobDashboardService } from "../jobDashboard/jobDashboard.service";
 
 
 @Module({
@@ -33,7 +34,7 @@ import {
     ]),
   ],
   controllers: [HistoricalDashboardController],
-  providers: [HistoricalDashboardService],
+  providers: [HistoricalDashboardService, JobDashboardService],
   exports: [HistoricalDashboardService],
 })
 

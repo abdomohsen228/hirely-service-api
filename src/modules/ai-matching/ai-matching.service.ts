@@ -142,18 +142,18 @@ export class AiMatchingService {
     this.logger.log(`Updated scores for all candidates for new job ${job._id}`);
   }
 
-  /**
-   * Scheduled task to screen applications for all candidates and jobs.
-   */
-  async screenApplications(): Promise<void> {
-    this.logger.log('Starting scheduled task: screenApplications');
-    // find jobs with status CLOSED and interviewStartDate > now
-    const jobs = await this.jobModel.find({ status: JobStatus.CLOSED, interviewStartDate: { $gt: new Date() } }).exec();
-    for (const job of jobs) {
-      // score the applications for this job
-      // and filter the ones below threshold as rejected
-      // then update the state and current stage of the application
-    }
-  }
+  // /**
+  //  * Scheduled task to screen applications for all candidates and jobs.
+  //  */
+  // async screenApplications(): Promise<void> {
+  //   this.logger.log('Starting scheduled task: screenApplications');
+  //   // find jobs with status CLOSED and interviewStartDate > now
+  //   const jobs = await this.jobModel.find({ status: JobStatus.CLOSED, interviewStartDate: { $gt: new Date() } }).exec();
+  //   for (const job of jobs) {
+  //     // score the applications for this job
+  //     // and filter the ones below threshold as rejected
+  //     // then update the state and current stage of the application
+  //   }
+  // }
 
 }
