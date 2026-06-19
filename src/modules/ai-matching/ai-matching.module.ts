@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AiMatchingService } from './ai-matching.service';
+import { AiServiceClient } from './ai-service.client';
 import {
   UserJobScore,
   UserJobScoreSchema,
@@ -12,7 +13,6 @@ import {
   CandidateSchema,
 } from 'src/database/schemas/candidate.schema';
 import {AiMatchingScheduler} from './ai-matching.scheduler';
-import { JobApplication, JobApplicationSchema } from 'src/database/schemas/application.schema';
 @Module({
   imports: [
     HttpModule,
@@ -20,10 +20,9 @@ import { JobApplication, JobApplicationSchema } from 'src/database/schemas/appli
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
       { name: Candidate.name, schema: CandidateSchema },
-      { name: JobApplication.name, schema: JobApplicationSchema },
     ]),
   ],
-  providers: [AiMatchingService, AiMatchingScheduler ],
+  providers: [AiServiceClient, AiMatchingService, AiMatchingScheduler],
   exports: [AiMatchingService],
 })
 export class AiMatchingModule {}

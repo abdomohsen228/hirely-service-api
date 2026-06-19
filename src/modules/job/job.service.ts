@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -39,6 +40,8 @@ import {
   UserJobScore,
   UserJobScoreDocument,
 } from 'src/database/schemas/user_job_score.schema';
+import { ListTopMatchJobsQueryDto } from './dtos/request/listTopMatchJobsQuery.dto';
+import { PaginatedTopMatchJobsResponseDto } from './dtos/response/paginatedTopMatchJobsResponse.dto';
 import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
@@ -48,6 +51,7 @@ import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
 
 @Injectable()
 export class JobService {
+  private readonly logger = new Logger(JobService.name);
   private readonly defaultApplicationTotalStages = 4;
 
   constructor(
@@ -312,9 +316,10 @@ export class JobService {
       ).exec();
     }
 
-    // Trigger AI matching for all candidates
     this.aiMatchingService.computeScoresForJob(created).catch((err) => {
-      console.error('AI matching failed for new job:', err);
+      this.logger.error(
+        `AI matching failed for new job ${created._id.toString()}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     });
 
     return this.toResponse(created, hrProfile);
@@ -422,38 +427,74 @@ export class JobService {
     };
   }
 
-  public async getRecommendedJobs(
+
+  public async getTopMatchJobs(
     user: UserDocument,
-  ): Promise<RecommendedJobItemResponseDto[]> {
+    query: ListTopMatchJobsQueryDto,
+  ): Promise<PaginatedTopMatchJobsResponseDto> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
     const candidate = await this.getCandidateForUser(user);
 
-    const scores = await this.userJobScoreModel
-      .find({ candidateId: candidate._id })
-      .sort({ score: -1 })
-      .limit(10) // Top 10 for homepage
+    const jobCollection = this.jobModel.collection.name;
+    const [result] = await this.userJobScoreModel
+      .aggregate<{
+        metadata: { total: number }[];
+        data: {
+          score: number;
+          matchedSkills: string[];
+          job: JobDocument;
+        }[];
+      }>([
+        { $match: { candidateId: candidate._id } },
+        {
+          $lookup: {
+            from: jobCollection,
+            localField: 'jobId',
+            foreignField: '_id',
+            as: 'job',
+          },
+        },
+        { $unwind: '$job' },
+        { $match: { 'job.status': JobStatus.OPEN } },
+        { $sort: { score: -1 } },
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [{ $skip: skip }, { $limit: limit }],
+          },
+        },
+      ])
       .exec();
 
-    if (scores.length === 0) {
-      return [];
-    }
+    const total = result?.metadata[0]?.total ?? 0;
+    const data = result?.data ?? [];
 
-    const jobIds = scores.map((s) => s.jobId);
+    const jobIds = data.map((entry) => entry.job._id);
     const jobs = await this.jobModel.find({ _id: { $in: jobIds } }).exec();
-    const jobsById = new Map(jobs.map((j) => [j._id.toString(), j]));
+    const jobsById = new Map(jobs.map((job) => [job._id.toString(), job]));
 
     const items: RecommendedJobItemResponseDto[] = [];
-    for (const scoreDoc of scores) {
-      const job = jobsById.get(scoreDoc.jobId.toString());
-      if (job && job.status === JobStatus.OPEN) {
-        items.push({
-          job: this.toResponse(job),
-          score: scoreDoc.score,
-          matchedSkills: scoreDoc.matchedSkills,
-        });
+    for (const entry of data) {
+      const job = jobsById.get(entry.job._id.toString());
+      if (!job) {
+        continue;
       }
+      items.push({
+        job: this.toResponse(job, null, undefined, entry.score),
+        score: entry.score,
+        matchedSkills: entry.matchedSkills ?? [],
+      });
     }
 
-    return items;
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+    };
   }
 
   public async getRecentJobs(): Promise<JobPostResponseDto[]> {
@@ -698,6 +739,7 @@ export class JobService {
     doc: JobDocument,
     hrProfile?: HrDocument | null,
     isCandidateApply?: boolean,
+    matchScore?: number,
   ): JobPostResponseDto {
     let questions: string[] = [];
     if (doc.interviewerQuestions && doc.interviewerQuestions.length > 0) {
@@ -727,7 +769,8 @@ export class JobService {
       endDate: doc.endDate,
       sprintDuration: doc.sprintDuration,
       applicationCount: doc.applicationCount,
-      workplaceType:doc.workplaceType,
+      workplaceType: doc.workplaceType,
+      matchScore: matchScore ?? doc.matchScore ?? null,
       createdAt: doc.get('createdAt'),
       updatedAt: doc.get('updatedAt'),
     };

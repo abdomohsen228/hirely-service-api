@@ -3,7 +3,6 @@ import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
 import { JobType } from 'src/database/enums/jobType.enum';
 import { JobStatus } from 'src/database/enums/jobStatus.enum';
 import { CompanySize } from 'src/database/enums/companySize.enum';
-import { IsNumber } from 'class-validator';
 import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
 
 export class JobPostResponseDto {
@@ -76,7 +75,6 @@ export class JobPostResponseDto {
   @ApiProperty()
   workplaceType: WorkplaceTypeFilter;
 
-  
   @ApiProperty()
   startDate: Date;
 
@@ -85,4 +83,10 @@ export class JobPostResponseDto {
 
   @ApiProperty()
   sprintDuration: number;
+
+  @ApiPropertyOptional({
+    description: 'AI matching score for the current candidate (0-100)',
+    nullable: true,
+  })
+  matchScore?: number | null;
 }
