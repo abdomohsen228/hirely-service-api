@@ -3,7 +3,6 @@ import { Document, Types } from 'mongoose';
 import { JobStatus } from '../enums/jobStatus.enum';
 import { ExperienceLevel } from '../enums/experienceYears.enum';
 import { JobType } from '../enums/jobType.enum';
-import { InterviewQuestion } from './interview_questions.schema';
 import { WorkplaceTypeFilter } from '../enums/workplaceType.enum';
 export type JobDocument = Job & Document;
 
@@ -71,13 +70,13 @@ export class Job extends Document {
 
   @Prop({
     required: true,
-    description: 'Start date of job being posted as open'
+    description: 'Start date of job being posted as open',
   })
   startDate: Date;
 
   @Prop({
     required: true,
-    description: 'End date of job being posted as open'
+    description: 'End date of job being posted as open',
   })
   endDate: Date;
 
@@ -92,44 +91,51 @@ export class Job extends Document {
 
   @Prop({
     required: true,
-    description: 'Start date of Interview phase '
+    description: 'Start date of Interview phase ',
   })
   interviewStartDate: Date;
 
   @Prop({
     required: true,
-    description: 'End date of Interview phase'
+    description: 'End date of Interview phase',
   })
   interviewEndDate: Date;
 
   @Prop({
-    default: false
+    default: false,
   })
   interviewStatus: boolean;
-  
+
   @Prop({
     required: true,
-    description: 'the plcae candidate will work from'
+    description: 'the plcae candidate will work from',
   })
-  workplaceType:WorkplaceTypeFilter;
+  workplaceType: WorkplaceTypeFilter;
 
-
+  @Prop({
+    type: Number,
+    min: 0,
+    max: 100,
+    required: false,
+    description:
+      'Candidate-specific AI match score (populated from UserJobScore, not persisted on create/update)',
+  })
+  matchScore?: number;
 }
-
 
 export const JobSchema = SchemaFactory.createForClass(Job);
 
 JobSchema.index({
   status: 1,
   endDate: 1,
-})
+});
 
 JobSchema.index({
   interviewStatus: 1,
-  interviewStartDate: 1
-})
+  interviewStartDate: 1,
+});
 
 JobSchema.index({
   interviewStatus: 1,
   interviewEndDate: 1,
-})
+});

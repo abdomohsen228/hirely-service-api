@@ -20,21 +20,19 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ApplicationStatus } from 'src/database/enums/applicationStatus.enum';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guards';
 import { CurrentUser } from 'src/decorators/currentPayload';
 import { UserDocument } from 'src/database/schemas/user.schema';
 import { JobService } from './job.service';
 import { CreateJobPostRequestDto } from './dtos/request/createJobPostRequest.dto';
 import { ListJobPostsQueryDto } from './dtos/request/listJobPostsQuery.dto';
-import { ListMyApplicationsQueryDto } from './dtos/request/listMyApplicationsQuery.dto';
 import { UpdateHrJobApplicationRequestDto } from './dtos/request/updateHrJobApplicationRequest.dto';
 import { UpdateJobPostRequestDto } from './dtos/request/updateJobPostRequest.dto';
 import { JobPostResponseDto } from './dtos/response/jobPostResponse.dto';
-import { MyApplicationsStatsResponseDto } from '../applications/dtos/response/myApplicationsStatsResponse.dto';
 import { MyJobApplicationItemResponseDto } from './dtos/response/myJobApplicationItemResponse.dto';
 import { PaginatedJobListResponseDto } from './dtos/response/paginatedJobListResponse.dto';
-import { PaginatedMyJobApplicationsResponseDto } from './dtos/response/paginatedMyJobApplicationsResponse.dto';
+import { ListTopMatchJobsQueryDto } from './dtos/request/listTopMatchJobsQuery.dto';
+import { PaginatedTopMatchJobsResponseDto } from './dtos/response/paginatedTopMatchJobsResponse.dto';
 import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 
 @ApiTags('Jobs')
@@ -42,7 +40,7 @@ import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobIte
 @UseGuards(AuthGuard)
 @Controller('jobs')
 export class JobController {
-  constructor(private readonly jobService: JobService) { }
+  constructor(private readonly jobService: JobService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -77,18 +75,22 @@ export class JobController {
     return this.jobService.listJobPosts(userPayload, query);
   }
 
-  @Get('recommended')
+  @Get('top-matches')
   @ApiOperation({
-    summary: 'Candidate: list recommended jobs based on AI matching',
+    summary:
+      'Candidate: list top matching open jobs ordered by AI match score (paginated)',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   @ApiResponse({
     status: HttpStatus.OK,
-    type: [RecommendedJobItemResponseDto],
+    type: PaginatedTopMatchJobsResponseDto,
   })
-  public async getRecommendedJobs(
+  public async getTopMatchJobs(
     @CurrentUser() userPayload: UserDocument,
-  ): Promise<RecommendedJobItemResponseDto[]> {
-    return this.jobService.getRecommendedJobs(userPayload);
+    @Query() query: ListTopMatchJobsQueryDto,
+  ): Promise<PaginatedTopMatchJobsResponseDto> {
+    return this.jobService.getTopMatchJobs(userPayload, query);
   }
 
   @Get('recent')
@@ -194,7 +196,9 @@ export class JobController {
   }
 
   @Get(':id/questions')
-  @ApiOperation({ summary: 'HR/Candidate: get interviewer questions for a job' })
+  @ApiOperation({
+    summary: 'HR/Candidate: get interviewer questions for a job',
+  })
   @ApiParam({ name: 'id', description: 'Job id' })
   @ApiResponse({
     status: HttpStatus.OK,

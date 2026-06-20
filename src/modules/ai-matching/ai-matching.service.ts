@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { firstValueFrom } from 'rxjs';
 import {
   UserJobScore,
   UserJobScoreDocument,
@@ -13,31 +10,26 @@ import {
   Candidate,
   CandidateDocument,
 } from 'src/database/schemas/candidate.schema';
-
-import { JobApplication, JobApplicationDocument } from 'src/database/schemas/application.schema';
-import { JobStatus } from 'src/database/enums/jobStatus.enum';
+import { AiServiceClient } from './ai-service.client';
+import {
+  JobMatchCallContext,
+  JobMatchJobInput,
+  JobMatchRecommendation,
+} from './types/job-match.types';
 
 @Injectable()
 export class AiMatchingService {
   private readonly logger = new Logger(AiMatchingService.name);
-  private readonly aiServiceUrl: string;
 
   constructor(
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    private readonly aiServiceClient: AiServiceClient,
     @InjectModel(UserJobScore.name)
     private readonly userJobScoreModel: Model<UserJobScoreDocument>,
     @InjectModel(Job.name)
     private readonly jobModel: Model<JobDocument>,
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
-    @InjectModel(JobApplication.name)
-    private readonly jobApplicationModel: Model<JobApplicationDocument>,
-  ) {
-    this.aiServiceUrl =
-      this.configService.get<string>('AI_SERVICE_URL') ||
-      'http://localhost:8000';
-  }
+  ) {}
 
   /**
    * Triggers matching for a specific candidate against all available jobs.
@@ -46,114 +38,117 @@ export class AiMatchingService {
     const cvUrl = candidate.cvFileUrl;
     if (!cvUrl) {
       this.logger.warn(
-        `Candidate ${candidate._id} has no CV URL. Skipping matching.`,
+        `[candidate_cv_upload] Candidate ${candidate._id} has no CV URL. Skipping matching.`,
       );
       return;
     }
 
     const jobs = await this.jobModel.find({ status: 'OPEN' }).exec();
     if (jobs.length === 0) {
-      this.logger.log('No open jobs found to match against.');
+      this.logger.log(
+        `[candidate_cv_upload] No open jobs found for candidate ${candidate._id}.`,
+      );
       return;
     }
 
-    const payload = {
-      cv_url: cvUrl,
-      jobs: jobs.map((job) => ({
-        job_id: job._id.toString(),
-        description: `${job.roleContext}\n\n${job.coreResponsibilities}`,
-        required_skills: job.skills,
-      })),
+    const jobInputs = jobs.map((job) => this.toJobMatchInput(job));
+    const context: JobMatchCallContext = {
+      trigger: 'candidate_cv_upload',
+      candidateId: candidate._id.toString(),
+      jobIds: jobInputs.map((job) => job.job_id),
     };
 
+    this.logger.log(
+      `[candidate_cv_upload] Starting match for candidate ${candidate._id} against ${jobs.length} open job(s).`,
+    );
+
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.aiServiceUrl}/jobs/match`, payload),
+      const recommendations = await this.aiServiceClient.matchJobs(
+        { cv_url: cvUrl, jobs: jobInputs },
+        context,
       );
 
-      const results: any[] = response.data.recommendations || response.data; // Handle different response formats
-
-      for (const result of results) {
-        await this.userJobScoreModel.updateOne(
-          { candidateId: candidate._id, jobId: result.job_id },
-          {
-            score: result.match_score,
-            matchedSkills: result.matched_skills || [],
-            updatedAt: new Date(),
-          },
-          { upsert: true },
-        );
-      }
-      this.logger.log(`Updated scores for candidate ${candidate._id}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to call AI service for candidate ${candidate._id}: ${error.message}`,
+      await this.saveRecommendations(candidate._id, recommendations, context);
+      this.logger.log(
+        `[candidate_cv_upload] Finished matching for candidate ${candidate._id}.`,
       );
+    } catch {
+      // Errors are already logged by AiServiceClient.
     }
   }
 
   /**
-   * Triggers matching for a new job against all available candidates.
+   * Triggers matching for a new job against all candidates with a CV.
    */
   async computeScoresForJob(job: JobDocument): Promise<void> {
     const candidates = await this.candidateModel
       .find({ cvFileUrl: { $exists: true, $ne: null } })
       .exec();
 
+    this.logger.log(
+      `[create_job] Starting match for job ${job._id} against ${candidates.length} candidate(s).`,
+    );
+
+    const jobInput = this.toJobMatchInput(job);
+
     for (const candidate of candidates) {
-      // In a real scenario, we might want to batch this or send only this job to the AI service
-      // But the requirement says: "Send CV + this job (or jobs list) to AI"
-      const payload = {
-        cv_url: candidate.cvFileUrl,
-        jobs: [
-          {
-            job_id: job._id.toString(),
-            description: `${job.roleContext}\n\n${job.coreResponsibilities}`,
-            required_skills: job.skills,
-          },
-        ],
+      const context: JobMatchCallContext = {
+        trigger: 'create_job',
+        candidateId: candidate._id.toString(),
+        jobIds: [jobInput.job_id],
       };
 
       try {
-        const response = await firstValueFrom(
-          this.httpService.post(`${this.aiServiceUrl}/jobs/match`, payload),
+        const recommendations = await this.aiServiceClient.matchJobs(
+          {
+            cv_url: candidate.cvFileUrl,
+            jobs: [jobInput],
+          },
+          context,
         );
 
-        const results: any[] = response.data.recommendations || response.data;
-        const result = results[0];
-
-        if (result) {
-          await this.userJobScoreModel.updateOne(
-            { candidateId: candidate._id, jobId: job._id },
-            {
-              score: result.match_score,
-              matchedSkills: result.matched_skills || [],
-              updatedAt: new Date(),
-            },
-            { upsert: true },
-          );
-        }
-      } catch (error) {
-        this.logger.error(
-          `Failed to call AI service for candidate ${candidate._id} on new job ${job._id}: ${error.message}`,
+        await this.saveRecommendations(
+          candidate._id,
+          recommendations,
+          context,
         );
+      } catch {
+        // Errors are already logged by AiServiceClient.
       }
     }
-    this.logger.log(`Updated scores for all candidates for new job ${job._id}`);
+
+    this.logger.log(
+      `[create_job] Finished matching job ${job._id} for all candidates.`,
+    );
   }
 
-  // /**
-  //  * Scheduled task to screen applications for all candidates and jobs.
-  //  */
-  // async screenApplications(): Promise<void> {
-  //   this.logger.log('Starting scheduled task: screenApplications');
-  //   // find jobs with status CLOSED and interviewStartDate > now
-  //   const jobs = await this.jobModel.find({ status: JobStatus.CLOSED, interviewStartDate: { $gt: new Date() } }).exec();
-  //   for (const job of jobs) {
-  //     // score the applications for this job
-  //     // and filter the ones below threshold as rejected
-  //     // then update the state and current stage of the application
-  //   }
-  // }
+  private toJobMatchInput(job: JobDocument): JobMatchJobInput {
+    return {
+      job_id: job._id.toString(),
+      description: `${job.roleContext}\n\n${job.coreResponsibilities}`,
+      required_skills: job.skills ?? [],
+    };
+  }
 
+  private async saveRecommendations(
+    candidateId: CandidateDocument['_id'],
+    recommendations: JobMatchRecommendation[],
+    context: JobMatchCallContext,
+  ): Promise<void> {
+    for (const recommendation of recommendations) {
+      await this.userJobScoreModel.updateOne(
+        { candidateId, jobId: recommendation.job_id },
+        {
+          score: recommendation.match_score,
+          matchedSkills: recommendation.matched_skills ?? [],
+          updatedAt: new Date(),
+        },
+        { upsert: true },
+      );
+
+      this.logger.log(
+        `[${context.trigger}] Saved UserJobScore | candidateId=${candidateId.toString()} | jobId=${recommendation.job_id} | score=${recommendation.match_score}`,
+      );
+    }
+  }
 }
