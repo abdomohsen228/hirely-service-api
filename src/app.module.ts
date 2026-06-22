@@ -14,6 +14,7 @@ import { EmailModule } from './modules/email/email.module';
 import { JobDashboardModule } from './modules/jobDashboard/jobDashboard.module';
 import { ExportModule } from './modules/export/export.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
+import { InterviewsModule } from './modules/interviews/interviews.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -39,6 +40,7 @@ import { ApplicationsModule } from './modules/applications/applications.module';
     JobDashboardModule,
     ExportModule,
     ApplicationsModule,
+    InterviewsModule,
     // BullModule.forRoot({
     //   connection: {
     //     host: process.env.REDIS_HOST,
