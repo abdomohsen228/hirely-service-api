@@ -19,3 +19,11 @@ export class InterviewResponse extends Document {
   @Prop({ required: true })
   responseDuration: number; // Duration in seconds that the candidate took to answer the question
 }
+
+export const InterviewResponseSchema =
+  SchemaFactory.createForClass(InterviewResponse);
+
+InterviewResponseSchema.index(
+  { candidateInterviewId: 1, questionId: 1 },
+  { unique: true },
+);
