@@ -15,6 +15,15 @@ export class InterviewQuestionItemResponseDto {
   answerDuration: number;
 
   @ApiProperty()
+  preparationDuration: number;
+ 
+  @ApiProperty({ enum: ['practice', 'question'] })
+  type: 'practice' | 'question';
+
+  @ApiProperty()
+  requiresSubmission: boolean;
+
+  @ApiProperty()
   isAnswered: boolean;
 
   @ApiPropertyOptional({ nullable: true })

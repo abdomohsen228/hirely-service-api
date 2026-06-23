@@ -16,6 +16,7 @@ import { InterviewAnswerResponseDto } from './dtos/response/interviewAnswerRespo
 import { InterviewSessionResponseDto } from './dtos/response/interviewSessionResponse.dto';
 import { InterviewUploadUrlResponseDto } from './dtos/response/interviewUploadUrlResponse.dto';
 import { InterviewsService } from './interviews.service';
+import { InterviewInstructionsResponseDto } from './dtos/response/interviewInstructionsResponse.dto';
 
 @ApiTags('Interviews')
 @ApiBearerAuth('access-token')
@@ -23,6 +24,24 @@ import { InterviewsService } from './interviews.service';
 @Controller()
 export class InterviewsController {
   constructor(private readonly interviewsService: InterviewsService) {}
+
+  @Get('/instructions')
+  @ApiOperation({ summary: 'Candidate: get interview instructions' })
+  @ApiResponse({ type: InterviewInstructionsResponseDto })
+  public async getInterviewInstructions(
+    @CurrentUser() user: UserDocument,
+  ): Promise<InterviewInstructionsResponseDto> {
+    return this.interviewsService.getInterviewInstructions(user);
+  }
+
+  @Get('/test')
+  @ApiOperation({ summary: 'Candidate: get test interview sample' })
+  @ApiResponse({ type: InterviewInstructionsResponseDto })
+  public async getInterviewTest(
+    @CurrentUser() user: UserDocument,
+  ): Promise<InterviewInstructionsResponseDto> {
+    return this.interviewsService.getInterviewInstructions(user);
+  }
 
   @Get('applications/me/:applicationId/interview')
   @ApiOperation({ summary: 'Candidate: get interview session for an application' })

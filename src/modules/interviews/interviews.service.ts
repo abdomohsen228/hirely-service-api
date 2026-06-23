@@ -39,7 +39,7 @@ import { SaveInterviewAnswerRequestDto } from './dtos/request/saveInterviewAnswe
 import { InterviewAnswerResponseDto } from './dtos/response/interviewAnswerResponse.dto';
 import { InterviewSessionResponseDto } from './dtos/response/interviewSessionResponse.dto';
 import { InterviewUploadUrlResponseDto } from './dtos/response/interviewUploadUrlResponse.dto';
-
+import { InterviewInstructionsResponseDto } from './dtos/response/interviewInstructionsResponse.dto';
 type InterviewContext = {
   candidate: CandidateDocument;
   application: JobApplicationDocument;
@@ -102,6 +102,21 @@ export class InterviewsService {
     return candidate;
   }
 
+  private buildPracticeQuestion() {
+    return {
+      id: 'practice-question',
+      order: 0,
+      question:
+        'Please introduce yourself briefly. This is a practice question to test your camera and microphone. Your response will not be saved or evaluated.',
+      answerDuration: 60,
+      preparationDuration: 45,
+      type: 'practice' as const,
+      requiresSubmission: false,
+      isAnswered: false,
+      answerVideoKey: null,
+      responseDuration: null,
+    };
+  }
   private async getInterviewContext(
     user: UserDocument,
     applicationId: string,
@@ -211,56 +226,92 @@ export class InterviewsService {
   }
 
   private async toSessionResponse(
-    context: InterviewContext,
-    interview: CandidateInterviewDocument | null,
-  ): Promise<InterviewSessionResponseDto> {
-    const questions = await this.getQuestionsForJob(context.job);
-    const responsesByQuestionId = interview
-      ? await this.getInterviewResponses(interview._id)
-      : new Map<string, InterviewResponseDocument>();
+  context: InterviewContext,
+  interview: CandidateInterviewDocument | null,
+): Promise<InterviewSessionResponseDto> {
+  const realQuestions = await this.getQuestionsForJob(context.job);
+  const responsesByQuestionId = interview
+    ? await this.getInterviewResponses(interview._id)
+    : new Map<string, InterviewResponseDocument>();
 
-    const answeredCount = questions.filter((question) =>
-      responsesByQuestionId.has(question._id.toString()),
-    ).length;
-    const firstUnansweredIndex = questions.findIndex(
-      (question) => !responsesByQuestionId.has(question._id.toString()),
-    );
-    const currentStep =
-      firstUnansweredIndex === -1
-        ? Math.max(questions.length, 1)
-        : firstUnansweredIndex + 1;
-    const status = interview?.status ?? CandidateInterviewStatus.INVITED;
+  // only real questions count toward progress / submit
+  const answeredCount = realQuestions.filter((question) =>
+    responsesByQuestionId.has(question._id.toString()),
+  ).length;
+
+  const firstUnansweredIndex = realQuestions.findIndex(
+    (question) => !responsesByQuestionId.has(question._id.toString()),
+  );
+
+  const status = interview?.status ?? CandidateInterviewStatus.INVITED;
+
+  const practiceQuestion = this.buildPracticeQuestion();
+
+  const mappedRealQuestions = realQuestions.map((question, index) => {
+    const response = responsesByQuestionId.get(question._id.toString());
 
     return {
-      interviewId: interview?._id.toString() ?? null,
-      applicationId: context.application._id.toString(),
-      jobId: context.job._id.toString(),
-      status,
-      currentStep,
-      totalSteps: questions.length,
-      answeredCount,
-      canStart:
-        status === CandidateInterviewStatus.INVITED &&
-        context.application.status === ApplicationStatus.INTERVIEW,
-      canSubmit:
-        status === CandidateInterviewStatus.STARTED &&
-        questions.length > 0 &&
-        answeredCount === questions.length,
-      interviewStartDate: context.job.interviewStartDate ?? null,
-      interviewEndDate: context.job.interviewEndDate ?? null,
-      questions: questions.map((question, index) => {
-        const response = responsesByQuestionId.get(question._id.toString());
-        return {
-          id: question._id.toString(),
-          order: question.order || index + 1,
-          question: question.question,
-          answerDuration: question.answerDuration,
-          isAnswered: Boolean(response),
-          answerVideoKey: response?.response ?? null,
-          responseDuration: response?.responseDuration ?? null,
-        };
-      }),
+      id: question._id.toString(),
+      order: index + 1,
+      question: question.question,
+      answerDuration: question.answerDuration,
+      preparationDuration: 45,
+      type: 'question' as const,
+      requiresSubmission: true,
+      isAnswered: Boolean(response),
+      answerVideoKey: response?.response ?? null,
+      responseDuration: response?.responseDuration ?? null,
     };
+  });
+
+  const questions = [practiceQuestion, ...mappedRealQuestions];
+
+  // currentStep is for UI navigation:
+  // 1 = practice question
+  // 2 = first real unanswered question
+  // 3 = second real unanswered question
+  // ...
+  const currentStep =
+    firstUnansweredIndex === -1
+      ? questions.length
+      : firstUnansweredIndex + 2;
+
+  return {
+    interviewId: interview?._id.toString() ?? null,
+    applicationId: context.application._id.toString(),
+    jobId: context.job._id.toString(),
+    status,
+    currentStep,
+    totalSteps: questions.length,
+    answeredCount,
+    canStart:
+      status === CandidateInterviewStatus.INVITED &&
+      context.application.status === ApplicationStatus.INTERVIEW,
+    canSubmit:
+      status === CandidateInterviewStatus.STARTED &&
+      realQuestions.length > 0 &&
+      answeredCount === realQuestions.length,
+    interviewStartDate: context.job.interviewStartDate ?? null,
+    interviewEndDate: context.job.interviewEndDate ?? null,
+    questions,
+  };
+  }
+
+  public async getInterviewInstructions(user:UserDocument):Promise<InterviewInstructionsResponseDto>{
+    this.assertCandidateUser(user);
+    const title = 'Interview Instructions';
+    const instructions = [
+      'Ensure your camera is ON',
+      'Ensure your microphone is working and audio is clear',
+      'Use a quiet environment',
+      'You have 45 seconds as a preperation time before each question',
+      'Each answer has a maximum duration of 60 seconds',
+    ];
+    return{
+      title:title,
+      instructions:instructions
+    }
+
   }
 
   public async getApplicationInterview(
@@ -317,6 +368,11 @@ export class InterviewsService {
     if (interview.status !== CandidateInterviewStatus.STARTED) {
       throw new BadRequestException('Interview is not active');
     }
+    if (questionId === 'practice-question') {
+      throw new BadRequestException(
+        'Practice question does not support uploads',
+      );
+    }
 
     const questionObjectId = this.parseObjectId(questionId, 'question');
     const questions = await this.getQuestionsForJob(job);
@@ -351,6 +407,12 @@ export class InterviewsService {
     );
     if (interview.status !== CandidateInterviewStatus.STARTED) {
       throw new BadRequestException('Interview is not active');
+    }
+
+    if (dto.questionId === 'practice-question') {
+      throw new BadRequestException(
+        'Practice question responses are not saved',
+      );
     }
 
     const questionObjectId = this.parseObjectId(dto.questionId, 'question');
