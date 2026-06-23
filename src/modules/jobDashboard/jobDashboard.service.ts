@@ -136,7 +136,7 @@ export class JobDashboardService {
           matchScore: application.matchScore 
         },
         indicators: {
-          cvRank: application.matchScore,
+          cvRank: application.matchScore || 0,
           english: 50,
           bodyLanguage: 50
         }

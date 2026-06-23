@@ -247,6 +247,7 @@ export class ApplicationsService {
             status: doc.status,
             startDate: doc.startDate,
             endDate: doc.endDate,
+            workplaceType: doc.workplaceType,
             sprintDuration: doc.sprintDuration,
             applicationCount: doc.applicationCount,
             createdAt: doc.get('createdAt'),
