@@ -15,6 +15,7 @@ import { JobDashboardModule } from './modules/jobDashboard/jobDashboard.module';
 import { ExportModule } from './modules/export/export.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { InterviewsModule } from './modules/interviews/interviews.module';
+import { HistoricalDashboardModule } from './modules/historicalDashboard/historicalDashboard.module'
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -41,6 +42,7 @@ import { InterviewsModule } from './modules/interviews/interviews.module';
     ExportModule,
     ApplicationsModule,
     InterviewsModule,
+    HistoricalDashboardModule,
     // BullModule.forRoot({
     //   connection: {
     //     host: process.env.REDIS_HOST,
