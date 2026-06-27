@@ -39,6 +39,8 @@ import { ForgotPasswordRequestDto } from './dtos/request/forgotPasswordRequest.d
 import { ResetPasswordRequestDto } from './dtos/request/resetPasswordRequest.dto';
 import { MessageResponseDto } from './dtos/response/messageResponse.dto';
 import { EmailService } from '../email/email.service';
+import { forwardRef, Inject } from '@nestjs/common';
+
 
 const PASSWORD_RESET_SUCCESS_MESSAGE =
   'If an account exists with this email, a password reset link has been sent.';
@@ -55,6 +57,7 @@ export class AuthService {
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(UserJobScore.name)
     private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    @Inject(forwardRef(() => AiMatchingService))
     private readonly aiMatchingService: AiMatchingService,
   ) {}
 

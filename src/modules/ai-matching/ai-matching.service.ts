@@ -16,10 +16,13 @@ import {
   JobMatchJobInput,
   JobMatchRecommendation,
 } from './types/job-match.types';
+import { UploadService } from 'src/upload/upload.service';
+import { Inject, forwardRef } from '@nestjs/common';
 
 @Injectable()
 export class AiMatchingService {
   private readonly logger = new Logger(AiMatchingService.name);
+  private readonly uploadService: UploadService;
 
   constructor(
     private readonly aiServiceClient: AiServiceClient,
@@ -35,7 +38,7 @@ export class AiMatchingService {
    * Triggers matching for a specific candidate against all available jobs.
    */
   async computeScoresForCandidate(candidate: CandidateDocument): Promise<void> {
-    const cvUrl = candidate.cvFileUrl;
+    const cvUrl = this.uploadService.getCvUrl(candidate.cvFileUrl);
     if (!cvUrl) {
       this.logger.warn(
         `[candidate_cv_upload] Candidate ${candidate._id} has no CV URL. Skipping matching.`,
@@ -64,7 +67,7 @@ export class AiMatchingService {
 
     try {
       const recommendations = await this.aiServiceClient.matchJobs(
-        { cv_url: cvUrl, jobs: jobInputs },
+        { cv_url: String(cvUrl), jobs: jobInputs },
         context,
       );
 
@@ -101,7 +104,7 @@ export class AiMatchingService {
       try {
         const recommendations = await this.aiServiceClient.matchJobs(
           {
-            cv_url: candidate.cvFileUrl,
+            cv_url: String(this.uploadService.getCvUrl(candidate.cvFileUrl)),
             jobs: [jobInput],
           },
           context,

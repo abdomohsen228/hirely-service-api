@@ -24,6 +24,7 @@ import {
   ALLOWED_IMAGE_EXTENSIONS,
   ALLOWED_PDF_EXTENSIONS,
 } from 'src/config/multer-constants';
+import { Inject, forwardRef } from '@nestjs/common';
 /* This file is to create the actual links needed to upload from the presistent storage low-level s3 folder */
 @Injectable()
 export class UploadService {
@@ -32,7 +33,8 @@ export class UploadService {
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
     private readonly s3Service: S3Service,
-    private readonly aiMatchingService: AiMatchingService,
+    // @Inject(forwardRef(() => AiMatchingService))
+    // private readonly aiMatchingService: AiMatchingService,
   ) {}
   private readonly bucket = process.env.AWS_S3_BUCKET_NAME!;
 
@@ -267,18 +269,18 @@ export class UploadService {
       user.rejectionReason = undefined;
       await user.save();
 
-      // Update candidate profile and trigger AI matching
-      const candidate = await this.candidateModel.findOne({ user: user._id });
-      if (candidate) {
-        candidate.cvFileUrl = user.cvUrl;
-        await candidate.save();
+      // // Update candidate profile and trigger AI matching
+      // const candidate = await this.candidateModel.findOne({ user: user._id });
+      // if (candidate) {
+      //   candidate.cvFileUrl = user.cvUrl;
+      //   await candidate.save();
 
-        this.aiMatchingService
-          .computeScoresForCandidate(candidate)
-          .catch((err) => {
-            console.error('AI matching failed for updated CV:', err);
-          });
-      }
+      //   this.aiMatchingService
+      //     .computeScoresForCandidate(candidate)
+      //     .catch((err) => {
+      //       console.error('AI matching failed for updated CV:', err);
+      //     });
+      // }
 
       return { message: 'CV approved' };
     } else {

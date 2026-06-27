@@ -11,12 +11,13 @@ import {
   Candidate,
   CandidateSchema,
 } from 'src/database/schemas/candidate.schema';
+import { forwardRef } from '@nestjs/common';
 
 @Module({
   imports: [
     S3Module,
     AuthModule,
-    AiMatchingModule,
+    forwardRef(()=>AiMatchingModule),
     // UploadQueueModule,
     MongooseModule.forFeature([
       { name: Candidate.name, schema: CandidateSchema },
