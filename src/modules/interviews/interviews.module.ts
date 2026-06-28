@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   JobApplication,
@@ -28,7 +28,7 @@ import { InterviewsService } from './interviews.service';
 
 @Module({
   imports: [
-    AuthModule,
+    forwardRef(() => AuthModule),
     S3Module,
     MongooseModule.forFeature([
       { name: JobApplication.name, schema: JobApplicationSchema },

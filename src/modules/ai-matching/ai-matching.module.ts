@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AiMatchingService } from './ai-matching.service';
@@ -19,7 +19,7 @@ import { InterviewsModule } from '../interviews/interviews.module';
   imports: [
     HttpModule,
     UploadModule,
-    InterviewsModule,
+    forwardRef(() => InterviewsModule),
     MongooseModule.forFeature([
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
