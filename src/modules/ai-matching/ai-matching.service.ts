@@ -17,7 +17,6 @@ import {
   JobMatchRecommendation,
 } from './types/job-match.types';
 import { UploadService } from 'src/upload/upload.service';
-import { Inject, forwardRef } from '@nestjs/common';
 
 @Injectable()
 export class AiMatchingService {
@@ -38,7 +37,14 @@ export class AiMatchingService {
    * Triggers matching for a specific candidate against all available jobs.
    */
   async computeScoresForCandidate(candidate: CandidateDocument): Promise<void> {
-    const cvUrl = this.uploadService.getCvUrl(candidate.cvFileUrl);
+    if (!candidate.user) {
+      this.logger.warn(
+        `[candidate_cv_upload] Candidate ${candidate._id} has no linked user. Skipping matching.`,
+      );
+      return;
+    }
+
+    const cvUrl = await this.uploadService.getCvUrl(candidate.user.toString());
     if (!cvUrl) {
       this.logger.warn(
         `[candidate_cv_upload] Candidate ${candidate._id} has no CV URL. Skipping matching.`,
@@ -85,7 +91,7 @@ export class AiMatchingService {
    */
   async computeScoresForJob(job: JobDocument): Promise<void> {
     const candidates = await this.candidateModel
-      .find({ cvFileUrl: { $exists: true, $ne: null } })
+      .find({ user: { $exists: true, $ne: null } })
       .exec();
 
     this.logger.log(
@@ -102,19 +108,25 @@ export class AiMatchingService {
       };
 
       try {
+        const cvUrl = await this.uploadService.getCvUrl(
+          candidate.user.toString(),
+        );
+        if (!cvUrl) {
+          this.logger.warn(
+            `[create_job] Candidate ${candidate._id} has no CV URL. Skipping.`,
+          );
+          continue;
+        }
+
         const recommendations = await this.aiServiceClient.matchJobs(
           {
-            cv_url: String(this.uploadService.getCvUrl(candidate.cvFileUrl)),
+            cv_url: String(cvUrl),
             jobs: [jobInput],
           },
           context,
         );
 
-        await this.saveRecommendations(
-          candidate._id,
-          recommendations,
-          context,
-        );
+        await this.saveRecommendations(candidate._id, recommendations, context);
       } catch {
         // Errors are already logged by AiServiceClient.
       }
