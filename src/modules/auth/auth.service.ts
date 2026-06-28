@@ -301,6 +301,7 @@ export class AuthService {
         token,
         user,
         isProfileCompleted: user.isProfileCompleted,
+        isNewUser: false,
       };
     }
     user = await this.userModel.create({
@@ -323,6 +324,7 @@ export class AuthService {
       token,
       user,
       isProfileCompleted: false,
+      isNewUser: true,
     };
   }
 
