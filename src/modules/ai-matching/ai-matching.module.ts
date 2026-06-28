@@ -14,10 +14,12 @@ import {
 } from 'src/database/schemas/candidate.schema';
 import {AiMatchingScheduler} from './ai-matching.scheduler';
 import { UploadModule } from 'src/upload/upload.module';
+import { InterviewsModule } from '../interviews/interviews.module';
 @Module({
   imports: [
     HttpModule,
     UploadModule,
+    InterviewsModule,
     MongooseModule.forFeature([
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
