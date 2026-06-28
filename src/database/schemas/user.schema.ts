@@ -11,6 +11,7 @@ export class User extends Document {
   @Prop({
     required: false,
     enum: UserRole,
+    default: UserRole.CANDIDATE,
   })
   role: UserRole;
 

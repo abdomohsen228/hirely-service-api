@@ -75,6 +75,7 @@ export class AuthService {
       email,
       hashedPassword,
       dateOfBirth: new Date(dateOfBirth),
+      role: UserRole.CANDIDATE,
       isProfileCompleted: false,
     });
     const tokenPayload = {
@@ -294,19 +295,20 @@ export class AuthService {
         email: user.email,
         role: user.role,
         tokenVersion: user.tokenVersion,
+        
       });
-      const isNewUser = !user.role || !user.isProfileCompleted;
       return {
         token,
         user,
         isProfileCompleted: user.isProfileCompleted,
-        isNewUser,
+        isNewUser: false,
       };
     }
     user = await this.userModel.create({
       email,
       googleId,
       provider: AuthProvider.GOOGLE,
+      role: UserRole.CANDIDATE,
       isProfileCompleted: false,
       dateOfBirth: new Date('2000-01-01'),
     });
