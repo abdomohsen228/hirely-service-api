@@ -24,8 +24,8 @@ import { forwardRef } from '@nestjs/common';
   providers: [AuthService, AuthGuard, GoogleStrategy],
   imports: [
     ConfigModule,
-    forwardRef(()=>AiMatchingModule),
     EmailModule,
+    forwardRef(()=>AiMatchingModule),
 
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
