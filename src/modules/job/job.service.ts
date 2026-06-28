@@ -45,7 +45,10 @@ import { PaginatedTopMatchJobsResponseDto } from './dtos/response/paginatedTopMa
 import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
-import { InterviewQuestion, InterviewQuestionDocument } from 'src/database/schemas/interview_questions.schema';
+import {
+  InterviewQuestion,
+  InterviewQuestionDocument,
+} from 'src/database/schemas/interview_questions.schema';
 type JobFilter = Record<string, unknown>;
 import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
 
@@ -62,10 +65,12 @@ export class JobService {
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(UserJobScore.name) private readonly userJobScoreModel: Model<UserJobScoreDocument>,
-    @InjectModel(InterviewQuestion.name) private readonly interviewQuestionModel: Model<InterviewQuestionDocument>,
+    @InjectModel(UserJobScore.name)
+    private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    @InjectModel(InterviewQuestion.name)
+    private readonly interviewQuestionModel: Model<InterviewQuestionDocument>,
     private readonly aiMatchingService: AiMatchingService,
-  ) { }
+  ) {}
 
   private assertHrUser(user: UserDocument): void {
     if (user.role !== UserRole.HR) {
@@ -97,10 +102,7 @@ export class JobService {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  private addAndFilter(
-    filter: JobFilter,
-    condition: JobFilter,
-  ): void {
+  private addAndFilter(filter: JobFilter, condition: JobFilter): void {
     const existing = filter.$and as JobFilter[] | undefined;
     filter.$and = existing ? [...existing, condition] : [condition];
   }
@@ -212,7 +214,7 @@ export class JobService {
   private async createInterviewQuestions(
     questions: string[],
     hrId: Types.ObjectId,
-    jobId: Types.ObjectId
+    jobId: Types.ObjectId,
   ): Promise<Types.ObjectId[]> {
     const createdQuestions: Types.ObjectId[] = [];
     for (const question of questions) {
@@ -230,7 +232,7 @@ export class JobService {
   private async editInterviewQuestions(
     questionIds: Types.ObjectId[],
     questions: string[],
-    hrId: Types.ObjectId
+    hrId: Types.ObjectId,
   ): Promise<void> {
     const questionUpdates = questions.map((question, index) => ({
       updateOne: {
@@ -240,21 +242,26 @@ export class JobService {
     }));
 
     await this.interviewQuestionModel.bulkWrite(questionUpdates);
-  };
+  }
 
   private async getInterviewQuestionsByJobId(
-    jobId: Types.ObjectId
+    jobId: Types.ObjectId,
   ): Promise<InterviewQuestionDocument[]> {
     return this.interviewQuestionModel.find({ jobId }).exec();
   }
 
-  private async clearInterviewQuestionsByJobId(jobId: Types.ObjectId, questionIds: Types.ObjectId[]): Promise<void> {
-    await this.interviewQuestionModel.deleteMany({ jobId, _id: { $nin: questionIds } }).exec();
+  private async clearInterviewQuestionsByJobId(
+    jobId: Types.ObjectId,
+    questionIds: Types.ObjectId[],
+  ): Promise<void> {
+    await this.interviewQuestionModel
+      .deleteMany({ jobId, _id: { $nin: questionIds } })
+      .exec();
   }
 
   public async getInterviewerQuestions(
     user: UserDocument,
-    jobId: string
+    jobId: string,
   ): Promise<string[]> {
     if (user.role === UserRole.CANDIDATE) {
       const candidate = await this.getCandidateForUser(user);
@@ -263,14 +270,19 @@ export class JobService {
         .findOne({ candidateId: candidate._id, jobId: jobObjectId })
         .exec();
       if (!application) {
-        throw new ForbiddenException('You can only view interviewer questions for jobs you have applied to');
+        throw new ForbiddenException(
+          'You can only view interviewer questions for jobs you have applied to',
+        );
       }
       if (application.status !== ApplicationStatus.INTERVIEW) {
-        throw new ForbiddenException('Interviewer questions are only available for applications in the interview stage');
+        throw new ForbiddenException(
+          'Interviewer questions are only available for applications in the interview stage',
+        );
       }
     }
     const jobObjectId = this.parseJobObjectId(jobId);
-    const interviewQuestions = await this.getInterviewQuestionsByJobId(jobObjectId);
+    const interviewQuestions =
+      await this.getInterviewQuestionsByJobId(jobObjectId);
     return interviewQuestions.map((q) => q.question);
   }
 
@@ -282,9 +294,13 @@ export class JobService {
     const hrProfile = await this.getHrProfileForUser(user);
     const interviewQuestionIds: Types.ObjectId[] = [];
     if (dto.interviewerQuestions && dto.interviewerQuestions.length > 0) {
-      const createdQuestionIds = await this.createInterviewQuestions(dto.interviewerQuestions, hrProfile._id, null);
+      const createdQuestionIds = await this.createInterviewQuestions(
+        dto.interviewerQuestions,
+        hrProfile._id,
+        null,
+      );
       interviewQuestionIds.push(...createdQuestionIds);
-    };
+    }
     const created = await this.jobModel.create({
       title: dto.title,
       department: dto.department,
@@ -304,16 +320,22 @@ export class JobService {
       endDate: dto.endDate,
       sprintDuration: dto.sprintDuration,
       workplaceType: dto.workplaceType,
-      interviewStartDate: new Date(dto.endDate.getTime() + 2 * 24 * 60 * 60 * 1000),
-      interviewEndDate: new Date(dto.startDate.getTime() + dto.sprintDuration * 24 * 60 * 60 * 1000),
+      interviewStartDate: new Date(
+        dto.endDate.getTime() + 2 * 24 * 60 * 60 * 1000,
+      ),
+      interviewEndDate: new Date(
+        dto.startDate.getTime() + dto.sprintDuration * 24 * 60 * 60 * 1000,
+      ),
     });
 
     // After job creation, update the interview questions with the jobId
     if (interviewQuestionIds.length > 0) {
-      await this.interviewQuestionModel.updateMany(
-        { _id: { $in: interviewQuestionIds } },
-        { jobId: created._id }
-      ).exec();
+      await this.interviewQuestionModel
+        .updateMany(
+          { _id: { $in: interviewQuestionIds } },
+          { jobId: created._id },
+        )
+        .exec();
     }
 
     this.aiMatchingService.computeScoresForJob(created).catch((err) => {
@@ -347,7 +369,10 @@ export class JobService {
     }
 
     if (query.search?.trim()) {
-      const searchRegex = new RegExp(this.escapeRegex(query.search.trim()), 'i');
+      const searchRegex = new RegExp(
+        this.escapeRegex(query.search.trim()),
+        'i',
+      );
       this.addAndFilter(filter, {
         $or: [
           { title: searchRegex },
@@ -368,7 +393,10 @@ export class JobService {
     }
 
     if (query.location?.trim()) {
-      filter.location = new RegExp(this.escapeRegex(query.location.trim()), 'i');
+      filter.location = new RegExp(
+        this.escapeRegex(query.location.trim()),
+        'i',
+      );
     }
 
     const workplaceFilter = this.getWorkplaceTypeFilter(query.workplaceType);
@@ -426,7 +454,6 @@ export class JobService {
       totalPages: total === 0 ? 0 : Math.ceil(total / limit),
     };
   }
-
 
   public async getTopMatchJobs(
     user: UserDocument,
@@ -580,7 +607,9 @@ export class JobService {
       nextStepAt: null,
     });
 
-    await this.jobModel.updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } }).exec();
+    await this.jobModel
+      .updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } })
+      .exec();
     job.applicationCount += 1;
 
     return {
@@ -679,38 +708,49 @@ export class JobService {
       'keywords',
       'interviewerQuestions',
       'documentAttachment',
-      'workplaceType'
+      'workplaceType',
     ];
 
     for (const key of assignableKeys) {
       const value = dto[key];
-      if (key === 'interviewerQuestions' && value !== undefined && Array.isArray(value)) {
+      if (
+        key === 'interviewerQuestions' &&
+        value !== undefined &&
+        Array.isArray(value)
+      ) {
         const existingQuestionIds = doc.interviewerQuestions ?? [];
 
-        const updateCount = Math.min(
-          existingQuestionIds.length,
-          value.length
-        );
+        const updateCount = Math.min(existingQuestionIds.length, value.length);
         const questionIdsToUpdate = existingQuestionIds.slice(0, updateCount);
         const questionsToUpdate = value.slice(0, updateCount);
 
         if (questionIdsToUpdate.length > 0) {
-          await this.editInterviewQuestions(questionIdsToUpdate, questionsToUpdate, doc.hr);
+          await this.editInterviewQuestions(
+            questionIdsToUpdate,
+            questionsToUpdate,
+            doc.hr,
+          );
         }
 
         let createdQuestionIds: Types.ObjectId[] = [];
         if (value.length > existingQuestionIds.length) {
           const questionsToCreate = value.slice(existingQuestionIds.length);
-          createdQuestionIds = await this.createInterviewQuestions(questionsToCreate, doc.hr, jobId);
+          createdQuestionIds = await this.createInterviewQuestions(
+            questionsToCreate,
+            doc.hr,
+            jobId,
+          );
         }
 
         doc.interviewerQuestions = [
           ...questionIdsToUpdate,
           ...createdQuestionIds,
         ];
-        await this.clearInterviewQuestionsByJobId(jobId, doc.interviewerQuestions);
-      }
-      else if (value !== undefined) {
+        await this.clearInterviewQuestionsByJobId(
+          jobId,
+          doc.interviewerQuestions,
+        );
+      } else if (value !== undefined) {
         (doc as unknown as Record<string, unknown>)[key] = value;
       }
     }
@@ -849,6 +889,4 @@ export class JobService {
       )
       .exec();
   }
-
-  
 }

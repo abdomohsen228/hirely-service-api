@@ -6,55 +6,27 @@ import { PdfExportService } from './exportPDF.service';
 
 @Injectable()
 export class ExportService {
-
   constructor(
-    private readonly pdfExport:
-      PdfExportService,
+    private readonly pdfExport: PdfExportService,
 
-    private readonly excelExport:
-      ExcelExportService,
+    private readonly excelExport: ExcelExportService,
 
-    private readonly csvExport:
-      CsvExportService,
+    private readonly csvExport: CsvExportService,
   ) {}
 
-  async export(
-    format: string,
-    headers: any,
-    data: any[],
-    res: Response,
-  ) {
-
+  async export(format: string, headers: any, data: any[], res: Response) {
     switch (format) {
-
       case 'pdf':
-        return this.pdfExport
-          .generate(
-            data,
-            headers,
-            res,
-          );
+        return this.pdfExport.generate(data, headers, res);
 
       case 'xlsx':
-        return this.excelExport
-          .generate(
-            data,
-            headers,
-            res,
-          );
+        return this.excelExport.generate(data, headers, res);
 
       case 'csv':
-        return this.csvExport
-          .generate(
-            data,
-            headers,
-            res,
-          );
+        return this.csvExport.generate(data, headers, res);
 
       default:
-        throw new Error(
-          'Invalid format',
-        );
+        throw new Error('Invalid format');
     }
   }
 }
