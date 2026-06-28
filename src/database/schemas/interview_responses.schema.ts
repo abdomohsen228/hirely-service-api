@@ -13,6 +13,9 @@ export class InterviewResponse extends Document {
   @Prop({ required: true })
   response: string; // Candidate's answer to the question
 
+  @Prop({ required: false })
+  responseOrder: number; // Candidate's answer to the question
+
   @Prop({ required: true })
   transcription: string;
 
