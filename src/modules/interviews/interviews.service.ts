@@ -475,4 +475,9 @@ export class InterviewsService {
 
     return this.toSessionResponse({ ...context, application }, interview);
   }
+
+  public async getInterviewResponsesByApplication(application: Types.ObjectId){
+    const candidateInterview = await this.candidateInterviewModel.findOne({applicationId: application});
+    return await this.getInterviewResponses(candidateInterview._id);
+  }
 }

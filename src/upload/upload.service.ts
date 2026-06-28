@@ -25,6 +25,10 @@ import {
   ALLOWED_PDF_EXTENSIONS,
 } from 'src/config/multer-constants';
 import { Inject, forwardRef } from '@nestjs/common';
+import { JobApplicationDocument, JobApplication } from 'src/database/schemas/application.schema';
+import { CandidateInterviewDocument, CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
+import { InterviewResponseDocument, InterviewResponse } from 'src/database/schemas/interview_responses.schema';
+import { Types } from 'mongoose';
 /* This file is to create the actual links needed to upload from the presistent storage low-level s3 folder */
 @Injectable()
 export class UploadService {
@@ -32,6 +36,13 @@ export class UploadService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
+    @InjectModel(JobApplication.name)
+    private readonly JobApplicationModel: Model<JobApplicationDocument>,
+    @InjectModel(CandidateInterview.name)
+    private readonly CandidateInterviewModel: Model<CandidateInterviewDocument>,
+    @InjectModel(InterviewResponse.name)
+    private readonly InterviewResponseModel: Model<InterviewResponseDocument>,
+
     private readonly s3Service: S3Service,
     // @Inject(forwardRef(() => AiMatchingService))
     // private readonly aiMatchingService: AiMatchingService,
@@ -42,15 +53,18 @@ export class UploadService {
     userId: string;
     fileName: string;
     contentType: string;
+    order: number;
     role: 'candidate' | 'hr';
+    application: string;
   }) {
     const Id = randomUUID();
     const extension = path.extname(params.fileName);
+    const order = params.order;
     let key = '';
     if (params.role === 'candidate') {
-      key = `interviews/answers/${params.userId}/${Id}/${extension}`;
+      key = `interviews/answers/${params.application}/${order}/${Id}/${extension}`;
     } else {
-      key = `interviews/questions/${params.userId}/${Id}/${extension}`;
+      key = `interviews/questions/${params.application}/${order}/${Id}/${extension}`;
     }
 
     return this.s3Service.createUploadUrl({
@@ -58,6 +72,23 @@ export class UploadService {
       key,
       contentType: params.contentType,
     });
+  }
+
+    async getVideoUrl(applicationId: string, order: number) {
+    const application = await this.JobApplicationModel.findById(new Types.ObjectId(applicationId));
+    if(!application){
+      throw new NotFoundException('Application Not found')
+    }
+    const candidateInterview = await this.CandidateInterviewModel.findOne({applicationId: application._id});
+    const interviewResponse = await this.InterviewResponseModel.findOne({
+      candidateInterviewId:candidateInterview._id,
+      responseOrder:order
+    })
+    if(!interviewResponse){
+      throw new NotFoundException('The provided question has not been responded to yet or the given order is incorrect!')
+    }
+    const key = interviewResponse.response;
+    return this.s3Service.getUrl({ key, bucket: this.bucket });
   }
 
   async createCvUploadUrl(params: {

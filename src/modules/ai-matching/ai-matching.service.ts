@@ -17,6 +17,7 @@ import {
   JobMatchRecommendation,
 } from './types/job-match.types';
 import { UploadService } from 'src/upload/upload.service';
+import { InterviewsService } from '../interviews/interviews.service';
 
 @Injectable()
 export class AiMatchingService {
@@ -31,6 +32,7 @@ export class AiMatchingService {
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
     private readonly uploadService: UploadService,
+    private readonly interviewService: InterviewsService,
   ) {}
 
   /**
@@ -166,4 +168,8 @@ export class AiMatchingService {
       );
     }
   }
+  /*
+    GET URLS FROM INTERVIEW SERVICE BY APPLICATION ID
+    CONVERT THESE IDS USING UPLOAD SERVICE FUNCTION
+  */
 }
