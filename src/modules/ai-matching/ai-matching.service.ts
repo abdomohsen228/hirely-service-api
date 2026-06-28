@@ -22,7 +22,6 @@ import { Inject, forwardRef } from '@nestjs/common';
 @Injectable()
 export class AiMatchingService {
   private readonly logger = new Logger(AiMatchingService.name);
-  private readonly uploadService: UploadService;
 
   constructor(
     private readonly aiServiceClient: AiServiceClient,
@@ -32,6 +31,7 @@ export class AiMatchingService {
     private readonly jobModel: Model<JobDocument>,
     @InjectModel(Candidate.name)
     private readonly candidateModel: Model<CandidateDocument>,
+    private readonly uploadService: UploadService,
   ) {}
 
   /**

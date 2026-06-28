@@ -14,11 +14,10 @@ import {
 } from 'src/database/schemas/candidate.schema';
 import {AiMatchingScheduler} from './ai-matching.scheduler';
 import { UploadModule } from 'src/upload/upload.module';
-import { forwardRef } from '@nestjs/common';
 @Module({
   imports: [
     HttpModule,
-    // forwardRef(()=>UploadModule),
+    UploadModule,
     MongooseModule.forFeature([
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
