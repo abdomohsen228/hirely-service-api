@@ -38,7 +38,7 @@ export class AiMatchingService {
    * Triggers matching for a specific candidate against all available jobs.
    */
   async computeScoresForCandidate(candidate: CandidateDocument): Promise<void> {
-    const cvUrl = this.uploadService.getCvUrl(candidate.cvFileUrl);
+    const cvUrl = this.uploadService.getCvUrl(String(candidate._id));
     if (!cvUrl) {
       this.logger.warn(
         `[candidate_cv_upload] Candidate ${candidate._id} has no CV URL. Skipping matching.`,
@@ -104,7 +104,7 @@ export class AiMatchingService {
       try {
         const recommendations = await this.aiServiceClient.matchJobs(
           {
-            cv_url: String(this.uploadService.getCvUrl(candidate.cvFileUrl)),
+            cv_url: String(this.uploadService.getCvUrl(String(candidate._id))),
             jobs: [jobInput],
           },
           context,
