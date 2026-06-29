@@ -371,8 +371,9 @@ export class AiMatchingService {
 
       for (const [, response] of interviewResponses) {
         if (response.response) {
-          const videoUrl = await this.uploadService.getVideoUrlByKey(
+          const videoUrl = await this.uploadService.getVideoUrl(
             response.response,
+            response.responseOrder,
           );
           if (videoUrl) {
             videoUrls.push(videoUrl);
