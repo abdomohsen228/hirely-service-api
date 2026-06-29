@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   NotAcceptableException,
 } from '@nestjs/common';
@@ -32,10 +33,11 @@ import { Types } from 'mongoose';
 /* This file is to create the actual links needed to upload from the presistent storage low-level s3 folder */
 @Injectable()
 export class UploadService {
+  private readonly logger = new Logger(UploadService.name);
+
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Candidate.name)
-    private readonly candidateModel: Model<CandidateDocument>,
     @InjectModel(JobApplication.name)
     private readonly JobApplicationModel: Model<JobApplicationDocument>,
     @InjectModel(CandidateInterview.name)
@@ -341,5 +343,21 @@ export class UploadService {
 
   async testConnection() {
     return this.s3Service.testConnection();
+  }
+
+  async buildFileUrl(key: string): Promise<string | null> {
+    if (!key) {
+      return null;
+    }
+    try {
+      return await this.s3Service.getUrl({ key, bucket: this.bucket });
+    } catch (error) {
+      this.logger.error(`Failed to build URL for key ${key}: ${error}`);
+      return null;
+    }
+  }
+
+  async getVideoUrlByKey(key: string): Promise<string | null> {
+    return this.buildFileUrl(key);
   }
 }

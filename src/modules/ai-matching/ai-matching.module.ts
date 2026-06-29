@@ -12,6 +12,14 @@ import {
   Candidate,
   CandidateSchema,
 } from 'src/database/schemas/candidate.schema';
+import {
+  JobApplication,
+  JobApplicationSchema,
+} from 'src/database/schemas/application.schema';
+import {
+  VideoAiAnalysis,
+  VideoAiAnalysisSchema,
+} from 'src/database/schemas/video_ai_analysis.schema';
 import {AiMatchingScheduler} from './ai-matching.scheduler';
 import { UploadModule } from 'src/upload/upload.module';
 import { InterviewsModule } from '../interviews/interviews.module';
@@ -24,6 +32,8 @@ import { InterviewsModule } from '../interviews/interviews.module';
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
       { name: Candidate.name, schema: CandidateSchema },
+      { name: JobApplication.name, schema: JobApplicationSchema },
+      { name: VideoAiAnalysis.name, schema: VideoAiAnalysisSchema },
     ]),
   ],
   providers: [AiServiceClient, AiMatchingService, AiMatchingScheduler],
