@@ -23,17 +23,21 @@ import {
 import {AiMatchingScheduler} from './ai-matching.scheduler';
 import { UploadModule } from 'src/upload/upload.module';
 import { InterviewsModule } from '../interviews/interviews.module';
+import { EmailModule } from '../email/email.module';
+import { User, UserSchema } from 'src/database/schemas/user.schema';
 @Module({
   imports: [
     HttpModule,
     UploadModule,
     forwardRef(() => InterviewsModule),
+    EmailModule,
     MongooseModule.forFeature([
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
       { name: Candidate.name, schema: CandidateSchema },
       { name: JobApplication.name, schema: JobApplicationSchema },
       { name: VideoAiAnalysis.name, schema: VideoAiAnalysisSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   providers: [AiServiceClient, AiMatchingService, AiMatchingScheduler],

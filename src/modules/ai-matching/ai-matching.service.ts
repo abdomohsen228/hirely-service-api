@@ -26,6 +26,8 @@ import {
 } from './types/job-match.types';
 import { UploadService } from 'src/upload/upload.service';
 import { InterviewsService } from '../interviews/interviews.service';
+import { EmailService } from '../email/email.service';
+import { User, UserDocument } from 'src/database/schemas/user.schema';
 
 @Injectable()
 export class AiMatchingService {
@@ -43,8 +45,11 @@ export class AiMatchingService {
     private readonly jobApplicationModel: Model<JobApplicationDocument>,
     @InjectModel(VideoAiAnalysis.name)
     private readonly videoAiAnalysisModel: Model<VideoAiAnalysisDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
     private readonly uploadService: UploadService,
     private readonly interviewService: InterviewsService,
+    private readonly emailService: EmailService,
   ) {}
 
   /**
@@ -177,6 +182,65 @@ export class AiMatchingService {
 
       this.logger.log(
         `[${context.trigger}] Saved UserJobScore | candidateId=${candidateId.toString()} | jobId=${recommendation.job_id} | score=${recommendation.match_score}`,
+      );
+
+      // Send email if score > 0.7 and trigger is from job creation
+      if (recommendation.match_score > 0.7 && context.trigger === 'create_job') {
+        await this.sendMatchingEmailIfScoreHigh(
+          candidateId,
+          recommendation.job_id,
+          recommendation.match_score,
+        );
+      }
+    }
+  }
+
+  private async sendMatchingEmailIfScoreHigh(
+    candidateId: CandidateDocument['_id'],
+    jobId: string,
+    score: number,
+  ): Promise<void> {
+    try {
+      const candidate = await this.candidateModel.findById(candidateId).exec();
+      if (!candidate || !candidate.user) {
+        this.logger.warn(
+          `[email_notification] Candidate ${candidateId} not found or has no linked user. Skipping email.`,
+        );
+        return;
+      }
+
+      const user = await this.userModel.findById(candidate.user).exec();
+      if (!user || !user.email) {
+        this.logger.warn(
+          `[email_notification] User ${candidate.user} not found or has no email. Skipping email.`,
+        );
+        return;
+      }
+
+      const job = await this.jobModel.findById(jobId).exec();
+      if (!job) {
+        this.logger.warn(
+          `[email_notification] Job ${jobId} not found. Skipping email.`,
+        );
+        return;
+      }
+
+      const jobDescription = `${job.roleContext}\n\n${job.coreResponsibilities}`;
+
+      await this.emailService.sendMatchingJobEmail(
+        job._id.toString(),
+        job.title,
+        jobDescription,
+        candidate.fullName,
+        user.email,
+      );
+
+      this.logger.log(
+        `[email_notification] Sent matching job email to ${user.email} for job ${jobId} with score ${score}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `[email_notification] Failed to send matching email for candidate ${candidateId} and job ${jobId}: ${error}`,
       );
     }
   }
