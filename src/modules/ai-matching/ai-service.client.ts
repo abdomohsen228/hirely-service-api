@@ -9,6 +9,10 @@ import {
   JobMatchRequest,
   JobMatchResponse,
 } from './types/job-match.types';
+import {
+  VideoAnalysisRequest,
+  VideoAnalysisResponse,
+} from './types/video-analysis.types';
 
 @Injectable()
 export class AiServiceClient {
@@ -65,6 +69,46 @@ export class AiServiceClient {
 
       this.logger.error(
         `[${context.trigger}] AI match failed in ${durationMs}ms | candidateId=${context.candidateId} | jobIds=[${context.jobIds.join(', ')}] | error=${message}`,
+      );
+
+      throw error;
+    }
+  }
+
+  async analyzeVideos(
+    payload: VideoAnalysisRequest,
+    context: { applicationId: string; candidateId: string },
+  ): Promise<VideoAnalysisResponse> {
+    const endpoint = `${this.aiServiceUrl}/video/analyze`;
+    const startedAt = Date.now();
+
+    this.logger.log(
+      `[video_analysis] POST ${endpoint} | applicationId=${context.applicationId} | candidateId=${context.candidateId} | videos=${payload.video_urls.length}`,
+    );
+    this.logger.debug(
+      `[video_analysis] Request payload: ${JSON.stringify(payload)}`,
+    );
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<VideoAnalysisResponse>(endpoint, payload),
+      );
+      const durationMs = Date.now() - startedAt;
+
+      this.logger.log(
+        `[video_analysis] AI video analysis succeeded in ${durationMs}ms | applicationId=${context.applicationId} | overallScore=${response.data.overall_interview_score}`,
+      );
+      this.logger.debug(
+        `[video_analysis] Response: ${JSON.stringify(response.data)}`,
+      );
+
+      return response.data;
+    } catch (error) {
+      const durationMs = Date.now() - startedAt;
+      const message = this.formatError(error);
+
+      this.logger.error(
+        `[video_analysis] AI video analysis failed in ${durationMs}ms | applicationId=${context.applicationId} | candidateId=${context.candidateId} | error=${message}`,
       );
 
       throw error;
