@@ -185,7 +185,10 @@ export class AiMatchingService {
       );
 
       // Send email if score > 0.7 and trigger is from job creation
-      if (recommendation.match_score > 0.7 && context.trigger === 'create_job') {
+      if (
+        recommendation.match_score > 0.7 &&
+        context.trigger === 'create_job'
+      ) {
         await this.sendMatchingEmailIfScoreHigh(
           candidateId,
           recommendation.job_id,
@@ -244,124 +247,15 @@ export class AiMatchingService {
       );
     }
   }
-  /*
-    GET URLS FROM INTERVIEW SERVICE BY APPLICATION ID
-    CONVERT THESE IDS USING UPLOAD SERVICE FUNCTION
-  */
-
-  /**
-   * Process video analysis for a specific application
-   */
-  async processVideosForApplication(
-    applicationId: Types.ObjectId,
-  ): Promise<void> {
-    const application = await this.jobApplicationModel.findById(applicationId);
-    if (!application) {
-      this.logger.warn(
-        `[video_analysis] Application ${applicationId} not found. Skipping.`,
-      );
-      return;
-    }
-
-    if (application.videosProcessedByAi) {
-      this.logger.log(
-        `[video_analysis] Application ${applicationId} already processed. Skipping.`,
-      );
-      return;
-    }
-
-    // Get interview responses for this application
-    const interviewResponses =
-      await this.interviewService.getInterviewResponsesByApplication(
-        application._id,
-      );
-
-    if (interviewResponses.size === 0) {
-      this.logger.log(
-        `[video_analysis] No interview responses found for application ${applicationId}. Skipping.`,
-      );
-      return;
-    }
-
-    // Build video URLs from S3 keys
-    const videoUrls: string[] = [];
-    for (const [, response] of interviewResponses) {
-      if (response.response) {
-        const videoUrl = await this.uploadService.getVideoUrl(response.response, response.responseOrder);
-        if (videoUrl) {
-          videoUrls.push(videoUrl);
-        }
-      }
-    }
-
-    if (videoUrls.length === 0) {
-      this.logger.warn(
-        `[video_analysis] No valid video URLs found for application ${applicationId}. Skipping.`,
-      );
-      return;
-    }
-
-    const candidate = await this.candidateModel.findById(application.candidateId);
-    if (!candidate || !candidate.user) {
-      this.logger.warn(
-        `[video_analysis] Candidate not found for application ${applicationId}. Skipping.`,
-      );
-      return;
-    }
-
-    const userId = candidate.user.toString();
-
-    try {
-      const analysisResponse = await this.aiServiceClient.analyzeVideos(
-        {
-          video_urls: videoUrls,
-          user_id: userId,
-          whisper_model: 'base.en',
-        },
-        {
-          applicationId: application._id.toString(),
-          candidateId: candidate._id.toString(),
-        },
-      );
-
-      // Save analysis results for each video
-      for (const videoResult of analysisResponse.videos) {
-        await this.videoAiAnalysisModel.create({
-          applicationId: application._id,
-          candidateId: candidate._id,
-          videoUrl: videoResult.video_url,
-          bodyLanguage: videoResult.body_language,
-          audio: videoResult.audio,
-          overallInterviewScore: videoResult.overall_interview_score,
-          conclusion: analysisResponse.conclusion,
-          identityVerification: analysisResponse.identity_verification,
-          warning: analysisResponse.warning,
-          feedback: analysisResponse.feedback,
-          feedbackError: analysisResponse.feedback_error,
-        });
-      }
-
-      // Mark application as processed
-      application.videosProcessedByAi = true;
-      await application.save();
-
-      this.logger.log(
-        `[video_analysis] Successfully processed ${analysisResponse.videos.length} videos for application ${applicationId}. Overall score: ${analysisResponse.overall_interview_score}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `[video_analysis] Failed to process videos for application ${applicationId}: ${error}`,
-      );
-    }
-  }
-
   /**
    * Process all applications that have videos but haven't been processed by AI yet
    * Called by cron job every minute
    * Processes videos per user (max 5 videos per user)
    */
   async processPendingVideoAnalyses(): Promise<void> {
-    this.logger.log('[video_analysis] Starting pending video analysis check...');
+    this.logger.log(
+      '[video_analysis] Starting pending video analysis check...',
+    );
 
     // Find all candidates who have applications with interviewed=true and videosProcessedByAi=false
     const applications = await this.jobApplicationModel
@@ -393,7 +287,10 @@ export class AiMatchingService {
     );
 
     // Process each candidate (max 5 videos per user)
-    for (const [candidateId, candidateApplications] of applicationsByCandidate) {
+    for (const [
+      candidateId,
+      candidateApplications,
+    ] of applicationsByCandidate) {
       await this.processVideosForCandidate(candidateId, candidateApplications);
     }
 
@@ -418,8 +315,9 @@ export class AiMatchingService {
 
     const userId = candidate.user.toString();
 
-    // Collect all video URLs from all applications for this candidate
+    // Collect all video URLs and S3 keys from all applications for this candidate
     const videoUrls: string[] = [];
+    const videoS3Keys: string[] = [];
     const applicationIds: Types.ObjectId[] = [];
 
     for (const application of applications) {
@@ -435,12 +333,13 @@ export class AiMatchingService {
 
       for (const [, response] of interviewResponses) {
         if (response.response) {
-          const videoUrl = await this.uploadService.getVideoUrl(
+          const videoUrl = await this.uploadService.getVideoUrlByKey(
             response.response,
-            response.responseOrder,
+            userId,
           );
           if (videoUrl) {
             videoUrls.push(videoUrl);
+            videoS3Keys.push(response.response);
             applicationIds.push(application._id);
           }
         }
@@ -463,6 +362,7 @@ export class AiMatchingService {
       const analysisResponse = await this.aiServiceClient.analyzeVideos(
         {
           video_urls: videoUrls,
+          videoS3Keys: videoS3Keys,
           user_id: userId,
           whisper_model: 'base.en',
         },
@@ -472,22 +372,25 @@ export class AiMatchingService {
         },
       );
 
-      // Save analysis results for each video
-      for (const videoResult of analysisResponse.videos) {
-        await this.videoAiAnalysisModel.create({
-          applicationId: applicationIds[0],
-          candidateId: candidate._id,
-          videoUrl: videoResult.video_url,
-          bodyLanguage: videoResult.body_language,
-          audio: videoResult.audio,
-          overallInterviewScore: videoResult.overall_interview_score,
-          conclusion: analysisResponse.conclusion,
-          identityVerification: analysisResponse.identity_verification,
-          warning: analysisResponse.warning,
-          feedback: analysisResponse.feedback,
-          feedbackError: analysisResponse.feedback_error,
-        });
-      }
+      // Save aggregated analysis results for the application
+      await this.videoAiAnalysisModel.create({
+        applicationId: applicationIds[0],
+        candidateId: candidate._id,
+        videos: analysisResponse.videos.map((video) => ({
+          video_url: video.video_url,
+          videoS3Key: video.videoS3Key,
+          transcription: video.transcription,
+          body_language: video.body_language,
+          audio: video.audio,
+          overall_interview_score: video.overall_interview_score,
+        })),
+        conclusion: analysisResponse.conclusion,
+        overallInterviewScore: analysisResponse.overall_interview_score,
+        identityVerification: analysisResponse.identity_verification,
+        warning: analysisResponse.warning,
+        feedback: analysisResponse.feedback,
+        feedbackError: analysisResponse.feedback_error,
+      });
 
       // Mark all involved applications as processed
       for (const appId of applicationIds) {
