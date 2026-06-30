@@ -11,11 +11,7 @@ import * as path from 'path';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
-import {
-  Candidate,
-  CandidateDocument,
-} from 'src/database/schemas/candidate.schema';
-import { AiMatchingService } from 'src/modules/ai-matching/ai-matching.service';
+import { Candidate } from 'src/database/schemas/candidate.schema';
 import { PictureCVStatus } from 'src/database/enums/pictureCVstatus.enum';
 import {
   //   MAX_IMAGE_FILE_SIZE_BYTES,
@@ -25,10 +21,18 @@ import {
   ALLOWED_IMAGE_EXTENSIONS,
   ALLOWED_PDF_EXTENSIONS,
 } from 'src/config/multer-constants';
-import { Inject, forwardRef } from '@nestjs/common';
-import { JobApplicationDocument, JobApplication } from 'src/database/schemas/application.schema';
-import { CandidateInterviewDocument, CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
-import { InterviewResponseDocument, InterviewResponse } from 'src/database/schemas/interview_responses.schema';
+import {
+  JobApplicationDocument,
+  JobApplication,
+} from 'src/database/schemas/application.schema';
+import {
+  CandidateInterviewDocument,
+  CandidateInterview,
+} from 'src/database/schemas/candidate_interview.schema';
+import {
+  InterviewResponseDocument,
+  InterviewResponse,
+} from 'src/database/schemas/interview_responses.schema';
 import { Types } from 'mongoose';
 /* This file is to create the actual links needed to upload from the presistent storage low-level s3 folder */
 @Injectable()
@@ -76,20 +80,30 @@ export class UploadService {
     });
   }
 
-    async getVideoUrl(applicationId: string, order: number) {
-    const application = await this.JobApplicationModel.findById(new Types.ObjectId(applicationId));
-    if(!application){
-      throw new NotFoundException('Application Not found')
+  async getVideoUrl(applicationId: string, order: number) {
+    const application = await this.JobApplicationModel.findById(
+      new Types.ObjectId(applicationId),
+    );
+    if (!application) {
+      throw new NotFoundException('Application Not found');
     }
-    const candidateInterview = await this.CandidateInterviewModel.findOne({applicationId: application._id});
+    const candidateInterview = await this.CandidateInterviewModel.findOne({
+      applicationId: application._id,
+    });
     const interviewResponse = await this.InterviewResponseModel.findOne({
-      candidateInterviewId:candidateInterview._id,
-      responseOrder:order
-    })
-    if(!interviewResponse){
-      throw new NotFoundException('The provided question has not been responded to yet or the given order is incorrect!')
+      candidateInterviewId: candidateInterview._id,
+      responseOrder: order,
+    });
+    if (!interviewResponse) {
+      throw new NotFoundException(
+        'The provided question has not been responded to yet or the given order is incorrect!',
+      );
     }
     const key = interviewResponse.response;
+    return this.s3Service.getUrl({ key, bucket: this.bucket });
+  }
+
+  async getVideoUrlByKey(key: string, userId: string) {
     return this.s3Service.getUrl({ key, bucket: this.bucket });
   }
 
@@ -115,15 +129,12 @@ export class UploadService {
     }
 
     user.cvUrl = key;
-    if(process.env.NODE_ENV === 'development')
-    {
+    if (process.env.NODE_ENV === 'development') {
       user.cvStatus = PictureCVStatus.APPROVED;
-    }
-    else
-    {
+    } else {
       user.cvStatus = PictureCVStatus.PENDING;
     }
-    
+
     await user.save();
 
     return this.s3Service.createUploadUrl({
@@ -155,11 +166,9 @@ export class UploadService {
     }
 
     user.profilePictureUrl = key;
-    if(process.env.NODE_ENV === 'development')
-    {
+    if (process.env.NODE_ENV === 'development') {
       user.profilePictureStatus = PictureCVStatus.APPROVED;
-    }
-    else{
+    } else {
       user.profilePictureStatus = PictureCVStatus.PENDING;
     }
 
@@ -224,9 +233,7 @@ export class UploadService {
       await this.s3Service.deleteFile({ key, bucket: this.bucket });
     }
 
-    
-    if(process.env.NODE_ENV === 'development')
-    {
+    if (process.env.NODE_ENV === 'development') {
       user.profilePictureStatus = PictureCVStatus.APPROVED;
       await user.save();
     }
@@ -260,8 +267,7 @@ export class UploadService {
       await this.s3Service.deleteFile({ key, bucket: this.bucket });
     }
 
-    if(process.env.NODE_ENV === 'development')
-    {
+    if (process.env.NODE_ENV === 'development') {
       user.cvStatus = PictureCVStatus.APPROVED;
       await user.save();
     }
@@ -343,21 +349,5 @@ export class UploadService {
 
   async testConnection() {
     return this.s3Service.testConnection();
-  }
-
-  async buildFileUrl(key: string): Promise<string | null> {
-    if (!key) {
-      return null;
-    }
-    try {
-      return await this.s3Service.getUrl({ key, bucket: this.bucket });
-    } catch (error) {
-      this.logger.error(`Failed to build URL for key ${key}: ${error}`);
-      return null;
-    }
-  }
-
-  async getVideoUrlByKey(key: string): Promise<string | null> {
-    return this.buildFileUrl(key);
   }
 }
