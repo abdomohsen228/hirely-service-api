@@ -76,7 +76,7 @@ export class UploadService {
     });
   }
 
-    async getVideoUrl(applicationId: string, order: number) {
+  async getVideoUrl(applicationId: string, order: number) {
     const application = await this.JobApplicationModel.findById(new Types.ObjectId(applicationId));
     if(!application){
       throw new NotFoundException('Application Not found')

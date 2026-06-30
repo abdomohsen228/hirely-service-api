@@ -11,10 +11,10 @@ export class InterviewResponse extends Document {
   questionId: Types.ObjectId; // Reference to InterviewQuestion
 
   @Prop({ required: true })
-  response: string; // Candidate's answer to the question
+  response: string; // Candidate's answer url to the question ( aws key )
 
   @Prop({ required: false })
-  responseOrder: number; // Candidate's answer to the question
+  responseOrder: number; // Candidate's answer order to the question -> ( question.order )
 
   @Prop({ required: true })
   transcription: string;

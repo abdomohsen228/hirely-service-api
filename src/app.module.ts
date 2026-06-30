@@ -15,7 +15,8 @@ import { JobDashboardModule } from './modules/jobDashboard/jobDashboard.module';
 import { ExportModule } from './modules/export/export.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { InterviewsModule } from './modules/interviews/interviews.module';
-import { HistoricalDashboardModule } from './modules/historicalDashboard/historicalDashboard.module'
+import { HistoricalDashboardModule } from './modules/historicalDashboard/historicalDashboard.module';
+import { ApplicationSumModule } from './modules/applicationSum/applicationSum.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -43,6 +44,7 @@ import { HistoricalDashboardModule } from './modules/historicalDashboard/histori
     ApplicationsModule,
     InterviewsModule,
     HistoricalDashboardModule,
+    ApplicationSumModule,
     // BullModule.forRoot({
     //   connection: {
     //     host: process.env.REDIS_HOST,

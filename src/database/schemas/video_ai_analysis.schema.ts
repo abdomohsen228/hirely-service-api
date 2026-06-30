@@ -31,7 +31,7 @@ export class VideoAiAnalysis extends Document {
     english_level: string;
     english_level_score: number;
     speech_score: number;
-    audio_score: number;
+    audio_score: number; //communication
     nlp_score: number;
     words_per_minute: number;
     filler_ratio: number;
@@ -88,3 +88,4 @@ export class VideoAiAnalysis extends Document {
 
 export const VideoAiAnalysisSchema =
   SchemaFactory.createForClass(VideoAiAnalysis);
+
