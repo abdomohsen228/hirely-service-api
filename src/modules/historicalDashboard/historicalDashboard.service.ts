@@ -31,7 +31,7 @@ export class HistoricalDashboardService {
         @InjectModel('JobApplication') private readonly jobApplicationModel: Model<JobApplicationDocument>,
         @InjectModel('Candidate') private readonly candidateModel: Model<CandidateDocument>,
         @InjectModel('Job') private readonly jobModel: Model<JobDocument>,
-        private readonly jobDashboardService: JobDashboardService
+        // private readonly jobDashboardService: JobDashboardService
     ) { }
 
     private assertHrUser(user: UserDocument): void {

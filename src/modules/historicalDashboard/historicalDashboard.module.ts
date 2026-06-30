@@ -34,7 +34,7 @@ import { JobDashboardService } from "../jobDashboard/jobDashboard.service";
     ]),
   ],
   controllers: [HistoricalDashboardController],
-  providers: [HistoricalDashboardService, JobDashboardService],
+  providers: [HistoricalDashboardService],
   exports: [HistoricalDashboardService],
 })
 

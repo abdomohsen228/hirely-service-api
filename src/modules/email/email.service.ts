@@ -73,28 +73,6 @@ export class EmailService {
 
     return this.transporter;
   }
-
-  async sendPasswordResetEmail(
-    to: string,
-    resetLink: string,
-  ): Promise<void> {
-
-    await this.sendMail({
-      to,
-      subject:
-        'Reset your Hirely password',
-      html: `
-        <p>
-          You requested a password reset.
-        </p>
-
-        <a href="${resetLink}">
-          Reset Password
-        </a>
-      `,
-    });
-  }
-
   private async sendMail(options: {
     to: string;
     subject: string;
@@ -119,58 +97,76 @@ export class EmailService {
     });
   }
 
-  public async sendRecruiterEmail(
-    candidates: any[],
-    subject: string,
-    template: string,
-    companyName: string,
-  ) {
-    const promises = candidates.map(
-      async (candidate) => {
+ public  async sendPasswordResetEmail(
+    to: string,
+    resetLink: string,
+  ): Promise<void> {
 
-        const html =
-          this.parseTemplate(
-            template,
-            {
-              name: candidate.name,
-              email: candidate.email,
-              jobTitle:
-                candidate.jobTitle,
-              companyName,
-            },
-          );
+    await this.sendMail({
+      to,
+      subject:
+        'Reset your Hirely password',
+      html: `
+        <p>
+          You requested a password reset.
+        </p>
 
-        return this.sendMail({
-          to: candidate.email,
-
-          subject,
-
-          from: `${companyName} Recruitment <${this.configService.get('MAIL_FROM')}>`,
-
-          html,
-        });
-      },
-    );
-
-    await Promise.all(promises);
+        <a href="${resetLink}">
+          Reset Password
+        </a>
+      `,
+    });
   }
+public async sendMatchingJobEmail(
+  jobId: string,
+  jobTitle: string,
+  jobDescription: string,
+  candidateName: string,
+  candidateEmail: string,
+): Promise<void> {
+  const jobLink = `${process.env.FRONTEND_URL}/jobs/${jobId}`;
 
-  private parseTemplate(
-    template: string,
-    candidate: any,
-  ) {
-    return template
-      .replace(
-        /{{name}}/g,
-        candidate.name,
-      )
-      .replace(
-        /{{email}}/g,
-        candidate.email,
-      )
-      .replace(
-        /{{jobTitle}}/g,
-        candidate.jobTitle,
-      );
-  }
+  await this.sendMail({
+    to: candidateEmail,
+    subject: `A new job matches your profile: ${jobTitle}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <p>Hi ${candidateName},</p>
+
+        <p>
+          Great news! We found a job that matches your profile.
+        </p>
+
+        <h3>${jobTitle}</h3>
+
+        <p>${jobDescription}</p>
+
+        <p>
+          Click the button below to view the job details and apply.
+        </p>
+
+        <a
+          href="${jobLink}"
+          style="
+            display:inline-block;
+            padding:12px 20px;
+            background:#2563eb;
+            color:#ffffff;
+            text-decoration:none;
+            border-radius:6px;
+          "
+        >
+          View Job
+        </a>
+
+        <p style="margin-top:20px;">
+          Best of luck,<br />
+          The Hirely Team
+        </p>
+      </div>
+    `,
+  });
+}
+
+
 }

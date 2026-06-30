@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AiMatchingService } from './ai-matching.service';
+import { AiServiceClient } from './ai-service.client';
 import {
   UserJobScore,
   UserJobScoreSchema,
@@ -11,19 +12,35 @@ import {
   Candidate,
   CandidateSchema,
 } from 'src/database/schemas/candidate.schema';
+import {
+  JobApplication,
+  JobApplicationSchema,
+} from 'src/database/schemas/application.schema';
+import {
+  VideoAiAnalysis,
+  VideoAiAnalysisSchema,
+} from 'src/database/schemas/video_ai_analysis.schema';
 import {AiMatchingScheduler} from './ai-matching.scheduler';
-import { JobApplication, JobApplicationSchema } from 'src/database/schemas/application.schema';
+import { UploadModule } from 'src/upload/upload.module';
+import { InterviewsModule } from '../interviews/interviews.module';
+import { EmailModule } from '../email/email.module';
+import { User, UserSchema } from 'src/database/schemas/user.schema';
 @Module({
   imports: [
     HttpModule,
+    UploadModule,
+    forwardRef(() => InterviewsModule),
+    EmailModule,
     MongooseModule.forFeature([
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: Job.name, schema: JobSchema },
       { name: Candidate.name, schema: CandidateSchema },
       { name: JobApplication.name, schema: JobApplicationSchema },
+      { name: VideoAiAnalysis.name, schema: VideoAiAnalysisSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
-  providers: [AiMatchingService, AiMatchingScheduler ],
+  providers: [AiServiceClient, AiMatchingService, AiMatchingScheduler],
   exports: [AiMatchingService],
 })
 export class AiMatchingModule {}

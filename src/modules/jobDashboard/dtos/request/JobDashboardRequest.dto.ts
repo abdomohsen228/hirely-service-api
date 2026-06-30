@@ -18,8 +18,7 @@ export class JobDashboardRequestDto {
     @IsString()
     applicationStatus?: string;
 
-    @ApiProperty({ example: '80', description: 'Filter applications by match score', required: false })
+    @ApiProperty({ example: 80 , description: 'Filter applications by match score', required: false })
     @IsOptional()
-    @IsString()
     matchScore?: number;
 }

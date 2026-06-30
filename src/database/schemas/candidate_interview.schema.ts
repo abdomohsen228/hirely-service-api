@@ -9,8 +9,11 @@ export class CandidateInterview extends Document {
   @Prop({ required: true })
   applicationId: Types.ObjectId; // Reference to the Application
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   sprintId: Types.ObjectId; // Reference to the InterviewSprint
+
+  @Prop({ required: true })
+  jobId: Types.ObjectId; // Reference to the Job
 
   @Prop({
     required: true,
@@ -25,3 +28,9 @@ export class CandidateInterview extends Document {
   @Prop({ default: null })
   submitted_at: Date;
 }
+
+export const CandidateInterviewSchema =
+  SchemaFactory.createForClass(CandidateInterview);
+
+CandidateInterviewSchema.index({ applicationId: 1 }, { unique: true });
+CandidateInterviewSchema.index({ jobId: 1, status: 1 });

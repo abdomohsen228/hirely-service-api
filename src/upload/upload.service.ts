@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   NotAcceptableException,
 } from '@nestjs/common';
@@ -24,15 +25,29 @@ import {
   ALLOWED_IMAGE_EXTENSIONS,
   ALLOWED_PDF_EXTENSIONS,
 } from 'src/config/multer-constants';
+import { Inject, forwardRef } from '@nestjs/common';
+import { JobApplicationDocument, JobApplication } from 'src/database/schemas/application.schema';
+import { CandidateInterviewDocument, CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
+import { InterviewResponseDocument, InterviewResponse } from 'src/database/schemas/interview_responses.schema';
+import { Types } from 'mongoose';
 /* This file is to create the actual links needed to upload from the presistent storage low-level s3 folder */
 @Injectable()
 export class UploadService {
+  private readonly logger = new Logger(UploadService.name);
+
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(Candidate.name)
-    private readonly candidateModel: Model<CandidateDocument>,
+    @InjectModel(JobApplication.name)
+    private readonly JobApplicationModel: Model<JobApplicationDocument>,
+    @InjectModel(CandidateInterview.name)
+    private readonly CandidateInterviewModel: Model<CandidateInterviewDocument>,
+    @InjectModel(InterviewResponse.name)
+    private readonly InterviewResponseModel: Model<InterviewResponseDocument>,
+
     private readonly s3Service: S3Service,
-    private readonly aiMatchingService: AiMatchingService,
+    // @Inject(forwardRef(() => AiMatchingService))
+    // private readonly aiMatchingService: AiMatchingService,
   ) {}
   private readonly bucket = process.env.AWS_S3_BUCKET_NAME!;
 
@@ -40,15 +55,18 @@ export class UploadService {
     userId: string;
     fileName: string;
     contentType: string;
+    order: number;
     role: 'candidate' | 'hr';
+    application: string;
   }) {
     const Id = randomUUID();
     const extension = path.extname(params.fileName);
+    const order = params.order;
     let key = '';
     if (params.role === 'candidate') {
-      key = `interviews/answers/${params.userId}/${Id}/${extension}`;
+      key = `interviews/answers/${params.application}/${order}/${Id}/${extension}`;
     } else {
-      key = `interviews/questions/${params.userId}/${Id}/${extension}`;
+      key = `interviews/questions/${params.application}/${order}/${Id}/${extension}`;
     }
 
     return this.s3Service.createUploadUrl({
@@ -56,6 +74,23 @@ export class UploadService {
       key,
       contentType: params.contentType,
     });
+  }
+
+    async getVideoUrl(applicationId: string, order: number) {
+    const application = await this.JobApplicationModel.findById(new Types.ObjectId(applicationId));
+    if(!application){
+      throw new NotFoundException('Application Not found')
+    }
+    const candidateInterview = await this.CandidateInterviewModel.findOne({applicationId: application._id});
+    const interviewResponse = await this.InterviewResponseModel.findOne({
+      candidateInterviewId:candidateInterview._id,
+      responseOrder:order
+    })
+    if(!interviewResponse){
+      throw new NotFoundException('The provided question has not been responded to yet or the given order is incorrect!')
+    }
+    const key = interviewResponse.response;
+    return this.s3Service.getUrl({ key, bucket: this.bucket });
   }
 
   async createCvUploadUrl(params: {
@@ -267,18 +302,18 @@ export class UploadService {
       user.rejectionReason = undefined;
       await user.save();
 
-      // Update candidate profile and trigger AI matching
-      const candidate = await this.candidateModel.findOne({ user: user._id });
-      if (candidate) {
-        candidate.cvFileUrl = user.cvUrl;
-        await candidate.save();
+      // // Update candidate profile and trigger AI matching
+      // const candidate = await this.candidateModel.findOne({ user: user._id });
+      // if (candidate) {
+      //   candidate.cvFileUrl = user.cvUrl;
+      //   await candidate.save();
 
-        this.aiMatchingService
-          .computeScoresForCandidate(candidate)
-          .catch((err) => {
-            console.error('AI matching failed for updated CV:', err);
-          });
-      }
+      //   this.aiMatchingService
+      //     .computeScoresForCandidate(candidate)
+      //     .catch((err) => {
+      //       console.error('AI matching failed for updated CV:', err);
+      //     });
+      // }
 
       return { message: 'CV approved' };
     } else {
@@ -308,5 +343,21 @@ export class UploadService {
 
   async testConnection() {
     return this.s3Service.testConnection();
+  }
+
+  async buildFileUrl(key: string): Promise<string | null> {
+    if (!key) {
+      return null;
+    }
+    try {
+      return await this.s3Service.getUrl({ key, bucket: this.bucket });
+    } catch (error) {
+      this.logger.error(`Failed to build URL for key ${key}: ${error}`);
+      return null;
+    }
+  }
+
+  async getVideoUrlByKey(key: string): Promise<string | null> {
+    return this.buildFileUrl(key);
   }
 }

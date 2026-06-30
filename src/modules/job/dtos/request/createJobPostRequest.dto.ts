@@ -136,9 +136,13 @@ export class CreateJobPostRequestDto {
   @Max(12)
   sprintDuration: number;
 
+  
   @ApiPropertyOptional({
     example:WorkplaceTypeFilter.HYBRID,
     description: 'The place the candidate will be working from'
   })
+  @IsOptional()
+  @IsEnum(WorkplaceTypeFilter)
+
   workplaceType:WorkplaceTypeFilter;
 }

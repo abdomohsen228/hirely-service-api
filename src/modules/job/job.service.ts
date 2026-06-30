@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -39,15 +40,21 @@ import {
   UserJobScore,
   UserJobScoreDocument,
 } from 'src/database/schemas/user_job_score.schema';
+import { ListTopMatchJobsQueryDto } from './dtos/request/listTopMatchJobsQuery.dto';
+import { PaginatedTopMatchJobsResponseDto } from './dtos/response/paginatedTopMatchJobsResponse.dto';
 import { RecommendedJobItemResponseDto } from './dtos/response/recommendedJobItemResponse.dto';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { AiMatchingService } from '../ai-matching/ai-matching.service';
-import { InterviewQuestion, InterviewQuestionDocument } from 'src/database/schemas/interview_questions.schema';
+import {
+  InterviewQuestion,
+  InterviewQuestionDocument,
+} from 'src/database/schemas/interview_questions.schema';
 type JobFilter = Record<string, unknown>;
 import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
 
 @Injectable()
 export class JobService {
+  private readonly logger = new Logger(JobService.name);
   private readonly defaultApplicationTotalStages = 4;
 
   constructor(
@@ -58,10 +65,12 @@ export class JobService {
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(UserJobScore.name) private readonly userJobScoreModel: Model<UserJobScoreDocument>,
-    @InjectModel(InterviewQuestion.name) private readonly interviewQuestionModel: Model<InterviewQuestionDocument>,
+    @InjectModel(UserJobScore.name)
+    private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    @InjectModel(InterviewQuestion.name)
+    private readonly interviewQuestionModel: Model<InterviewQuestionDocument>,
     private readonly aiMatchingService: AiMatchingService,
-  ) { }
+  ) {}
 
   private assertHrUser(user: UserDocument): void {
     if (user.role !== UserRole.HR) {
@@ -93,10 +102,7 @@ export class JobService {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  private addAndFilter(
-    filter: JobFilter,
-    condition: JobFilter,
-  ): void {
+  private addAndFilter(filter: JobFilter, condition: JobFilter): void {
     const existing = filter.$and as JobFilter[] | undefined;
     filter.$and = existing ? [...existing, condition] : [condition];
   }
@@ -208,7 +214,7 @@ export class JobService {
   private async createInterviewQuestions(
     questions: string[],
     hrId: Types.ObjectId,
-    jobId: Types.ObjectId
+    jobId: Types.ObjectId,
   ): Promise<Types.ObjectId[]> {
     const createdQuestions: Types.ObjectId[] = [];
     for (const question of questions) {
@@ -226,7 +232,7 @@ export class JobService {
   private async editInterviewQuestions(
     questionIds: Types.ObjectId[],
     questions: string[],
-    hrId: Types.ObjectId
+    hrId: Types.ObjectId,
   ): Promise<void> {
     const questionUpdates = questions.map((question, index) => ({
       updateOne: {
@@ -236,21 +242,26 @@ export class JobService {
     }));
 
     await this.interviewQuestionModel.bulkWrite(questionUpdates);
-  };
+  }
 
   private async getInterviewQuestionsByJobId(
-    jobId: Types.ObjectId
+    jobId: Types.ObjectId,
   ): Promise<InterviewQuestionDocument[]> {
     return this.interviewQuestionModel.find({ jobId }).exec();
   }
 
-  private async clearInterviewQuestionsByJobId(jobId: Types.ObjectId, questionIds: Types.ObjectId[]): Promise<void> {
-    await this.interviewQuestionModel.deleteMany({ jobId, _id: { $nin: questionIds } }).exec();
+  private async clearInterviewQuestionsByJobId(
+    jobId: Types.ObjectId,
+    questionIds: Types.ObjectId[],
+  ): Promise<void> {
+    await this.interviewQuestionModel
+      .deleteMany({ jobId, _id: { $nin: questionIds } })
+      .exec();
   }
 
   public async getInterviewerQuestions(
     user: UserDocument,
-    jobId: string
+    jobId: string,
   ): Promise<string[]> {
     if (user.role === UserRole.CANDIDATE) {
       const candidate = await this.getCandidateForUser(user);
@@ -259,14 +270,19 @@ export class JobService {
         .findOne({ candidateId: candidate._id, jobId: jobObjectId })
         .exec();
       if (!application) {
-        throw new ForbiddenException('You can only view interviewer questions for jobs you have applied to');
+        throw new ForbiddenException(
+          'You can only view interviewer questions for jobs you have applied to',
+        );
       }
       if (application.status !== ApplicationStatus.INTERVIEW) {
-        throw new ForbiddenException('Interviewer questions are only available for applications in the interview stage');
+        throw new ForbiddenException(
+          'Interviewer questions are only available for applications in the interview stage',
+        );
       }
     }
     const jobObjectId = this.parseJobObjectId(jobId);
-    const interviewQuestions = await this.getInterviewQuestionsByJobId(jobObjectId);
+    const interviewQuestions =
+      await this.getInterviewQuestionsByJobId(jobObjectId);
     return interviewQuestions.map((q) => q.question);
   }
 
@@ -278,9 +294,13 @@ export class JobService {
     const hrProfile = await this.getHrProfileForUser(user);
     const interviewQuestionIds: Types.ObjectId[] = [];
     if (dto.interviewerQuestions && dto.interviewerQuestions.length > 0) {
-      const createdQuestionIds = await this.createInterviewQuestions(dto.interviewerQuestions, hrProfile._id, null);
+      const createdQuestionIds = await this.createInterviewQuestions(
+        dto.interviewerQuestions,
+        hrProfile._id,
+        null,
+      );
       interviewQuestionIds.push(...createdQuestionIds);
-    };
+    }
     const created = await this.jobModel.create({
       title: dto.title,
       department: dto.department,
@@ -300,21 +320,28 @@ export class JobService {
       endDate: dto.endDate,
       sprintDuration: dto.sprintDuration,
       workplaceType: dto.workplaceType,
-      interviewStartDate: new Date(dto.endDate.getTime() + 2 * 24 * 60 * 60 * 1000),
-      interviewEndDate: new Date(dto.startDate.getTime() + dto.sprintDuration * 24 * 60 * 60 * 1000),
+      interviewStartDate: new Date(
+        dto.endDate.getTime() + 2 * 24 * 60 * 60 * 1000,
+      ),
+      interviewEndDate: new Date(
+        dto.startDate.getTime() + dto.sprintDuration * 24 * 60 * 60 * 1000,
+      ),
     });
 
     // After job creation, update the interview questions with the jobId
     if (interviewQuestionIds.length > 0) {
-      await this.interviewQuestionModel.updateMany(
-        { _id: { $in: interviewQuestionIds } },
-        { jobId: created._id }
-      ).exec();
+      await this.interviewQuestionModel
+        .updateMany(
+          { _id: { $in: interviewQuestionIds } },
+          { jobId: created._id },
+        )
+        .exec();
     }
 
-    // Trigger AI matching for all candidates
     this.aiMatchingService.computeScoresForJob(created).catch((err) => {
-      console.error('AI matching failed for new job:', err);
+      this.logger.error(
+        `AI matching failed for new job ${created._id.toString()}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     });
 
     return this.toResponse(created, hrProfile);
@@ -342,7 +369,10 @@ export class JobService {
     }
 
     if (query.search?.trim()) {
-      const searchRegex = new RegExp(this.escapeRegex(query.search.trim()), 'i');
+      const searchRegex = new RegExp(
+        this.escapeRegex(query.search.trim()),
+        'i',
+      );
       this.addAndFilter(filter, {
         $or: [
           { title: searchRegex },
@@ -363,7 +393,10 @@ export class JobService {
     }
 
     if (query.location?.trim()) {
-      filter.location = new RegExp(this.escapeRegex(query.location.trim()), 'i');
+      filter.location = new RegExp(
+        this.escapeRegex(query.location.trim()),
+        'i',
+      );
     }
 
     const workplaceFilter = this.getWorkplaceTypeFilter(query.workplaceType);
@@ -422,38 +455,73 @@ export class JobService {
     };
   }
 
-  public async getRecommendedJobs(
+  public async getTopMatchJobs(
     user: UserDocument,
-  ): Promise<RecommendedJobItemResponseDto[]> {
+    query: ListTopMatchJobsQueryDto,
+  ): Promise<PaginatedTopMatchJobsResponseDto> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
     const candidate = await this.getCandidateForUser(user);
 
-    const scores = await this.userJobScoreModel
-      .find({ candidateId: candidate._id })
-      .sort({ score: -1 })
-      .limit(10) // Top 10 for homepage
+    const jobCollection = this.jobModel.collection.name;
+    const [result] = await this.userJobScoreModel
+      .aggregate<{
+        metadata: { total: number }[];
+        data: {
+          score: number;
+          matchedSkills: string[];
+          job: JobDocument;
+        }[];
+      }>([
+        { $match: { candidateId: candidate._id } },
+        {
+          $lookup: {
+            from: jobCollection,
+            localField: 'jobId',
+            foreignField: '_id',
+            as: 'job',
+          },
+        },
+        { $unwind: '$job' },
+        { $match: { 'job.status': JobStatus.OPEN } },
+        { $sort: { score: -1 } },
+        {
+          $facet: {
+            metadata: [{ $count: 'total' }],
+            data: [{ $skip: skip }, { $limit: limit }],
+          },
+        },
+      ])
       .exec();
 
-    if (scores.length === 0) {
-      return [];
-    }
+    const total = result?.metadata[0]?.total ?? 0;
+    const data = result?.data ?? [];
 
-    const jobIds = scores.map((s) => s.jobId);
+    const jobIds = data.map((entry) => entry.job._id);
     const jobs = await this.jobModel.find({ _id: { $in: jobIds } }).exec();
-    const jobsById = new Map(jobs.map((j) => [j._id.toString(), j]));
+    const jobsById = new Map(jobs.map((job) => [job._id.toString(), job]));
 
     const items: RecommendedJobItemResponseDto[] = [];
-    for (const scoreDoc of scores) {
-      const job = jobsById.get(scoreDoc.jobId.toString());
-      if (job && job.status === JobStatus.OPEN) {
-        items.push({
-          job: this.toResponse(job),
-          score: scoreDoc.score,
-          matchedSkills: scoreDoc.matchedSkills,
-        });
+    for (const entry of data) {
+      const job = jobsById.get(entry.job._id.toString());
+      if (!job) {
+        continue;
       }
+      items.push({
+        job: this.toResponse(job, null, undefined, entry.score),
+        score: entry.score,
+        matchedSkills: entry.matchedSkills ?? [],
+      });
     }
 
-    return items;
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+    };
   }
 
   public async getRecentJobs(): Promise<JobPostResponseDto[]> {
@@ -539,7 +607,9 @@ export class JobService {
       nextStepAt: null,
     });
 
-    await this.jobModel.updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } }).exec();
+    await this.jobModel
+      .updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } })
+      .exec();
     job.applicationCount += 1;
 
     return {
@@ -638,38 +708,49 @@ export class JobService {
       'keywords',
       'interviewerQuestions',
       'documentAttachment',
-      'workplaceType'
+      'workplaceType',
     ];
 
     for (const key of assignableKeys) {
       const value = dto[key];
-      if (key === 'interviewerQuestions' && value !== undefined && Array.isArray(value)) {
+      if (
+        key === 'interviewerQuestions' &&
+        value !== undefined &&
+        Array.isArray(value)
+      ) {
         const existingQuestionIds = doc.interviewerQuestions ?? [];
 
-        const updateCount = Math.min(
-          existingQuestionIds.length,
-          value.length
-        );
+        const updateCount = Math.min(existingQuestionIds.length, value.length);
         const questionIdsToUpdate = existingQuestionIds.slice(0, updateCount);
         const questionsToUpdate = value.slice(0, updateCount);
 
         if (questionIdsToUpdate.length > 0) {
-          await this.editInterviewQuestions(questionIdsToUpdate, questionsToUpdate, doc.hr);
+          await this.editInterviewQuestions(
+            questionIdsToUpdate,
+            questionsToUpdate,
+            doc.hr,
+          );
         }
 
         let createdQuestionIds: Types.ObjectId[] = [];
         if (value.length > existingQuestionIds.length) {
           const questionsToCreate = value.slice(existingQuestionIds.length);
-          createdQuestionIds = await this.createInterviewQuestions(questionsToCreate, doc.hr, jobId);
+          createdQuestionIds = await this.createInterviewQuestions(
+            questionsToCreate,
+            doc.hr,
+            jobId,
+          );
         }
 
         doc.interviewerQuestions = [
           ...questionIdsToUpdate,
           ...createdQuestionIds,
         ];
-        await this.clearInterviewQuestionsByJobId(jobId, doc.interviewerQuestions);
-      }
-      else if (value !== undefined) {
+        await this.clearInterviewQuestionsByJobId(
+          jobId,
+          doc.interviewerQuestions,
+        );
+      } else if (value !== undefined) {
         (doc as unknown as Record<string, unknown>)[key] = value;
       }
     }
@@ -698,6 +779,7 @@ export class JobService {
     doc: JobDocument,
     hrProfile?: HrDocument | null,
     isCandidateApply?: boolean,
+    matchScore?: number,
   ): JobPostResponseDto {
     let questions: string[] = [];
     if (doc.interviewerQuestions && doc.interviewerQuestions.length > 0) {
@@ -727,7 +809,8 @@ export class JobService {
       endDate: doc.endDate,
       sprintDuration: doc.sprintDuration,
       applicationCount: doc.applicationCount,
-      workplaceType:doc.workplaceType,
+      workplaceType: doc.workplaceType,
+      matchScore: matchScore ?? doc.matchScore ?? null,
       createdAt: doc.get('createdAt'),
       updatedAt: doc.get('updatedAt'),
     };
@@ -806,6 +889,4 @@ export class JobService {
       )
       .exec();
   }
-
-  
 }
