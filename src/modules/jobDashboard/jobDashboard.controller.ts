@@ -117,4 +117,6 @@ export class JobDashboardController {
   }
 
   // end job by sending feedbacks to the candidates and final results
+
+  //implement application tracker api
 }

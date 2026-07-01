@@ -103,7 +103,7 @@ export class UploadService {
     return this.s3Service.getUrl({ key, bucket: this.bucket });
   }
 
-  async getVideoUrlByKey(key: string, userId: string) {
+  async getVideoUrlByKey(key: string, userId?: string) {
     return this.s3Service.getUrl({ key, bucket: this.bucket });
   }
 

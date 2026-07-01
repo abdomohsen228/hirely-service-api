@@ -445,8 +445,8 @@ export class JobService {
     }
 
     return {
-      items: docs.map((d) =>
-        this.toResponse(d, null, appliedJobIds.has(d._id.toString())),
+      items: await Promise.all(
+        docs.map((d) => this.toResponse(d, null, appliedJobIds.has(d._id.toString())))
       ),
       total,
       page,
@@ -509,7 +509,7 @@ export class JobService {
         continue;
       }
       items.push({
-        job: this.toResponse(job, null, undefined, entry.score),
+        job: await this.toResponse(job, null, undefined, entry.score),
         score: entry.score,
         matchedSkills: entry.matchedSkills ?? [],
       });
@@ -531,7 +531,7 @@ export class JobService {
       .limit(5)
       .exec();
 
-    return jobs.map((job) => this.toResponse(job));
+    return Promise.all(jobs.map((job) => this.toResponse(job)));
   }
 
   public async getJobPostById(
@@ -614,7 +614,7 @@ export class JobService {
 
     return {
       application: this.toApplicationResponse(application),
-      job: this.toResponse(job),
+      job: await this.toResponse(job),
     };
   }
 
@@ -678,7 +678,7 @@ export class JobService {
 
     return {
       application: this.toApplicationResponse(application),
-      job: this.toResponse(job),
+      job: await this.toResponse(job),
     };
   }
 
@@ -761,7 +761,7 @@ export class JobService {
     }
 
     await doc.save();
-    return this.toResponse(doc);
+    return await this.toResponse(doc);
   }
 
   public async deleteJobPost(user: UserDocument, id: string): Promise<void> {
@@ -775,15 +775,17 @@ export class JobService {
     }
   }
 
-  private toResponse(
+  private async toResponse(
     doc: JobDocument,
     hrProfile?: HrDocument | null,
     isCandidateApply?: boolean,
     matchScore?: number,
-  ): JobPostResponseDto {
+  ): Promise<JobPostResponseDto> {
     let questions: string[] = [];
     if (doc.interviewerQuestions && doc.interviewerQuestions.length > 0) {
-      questions = doc.interviewerQuestions.map((q) => q.toString());
+      const user = await this.userModel.findById(doc.createdBy).exec();
+      questions = await this.getInterviewerQuestions(user, (doc._id).toString());
+      
     }
     return {
       id: doc._id.toString(),
