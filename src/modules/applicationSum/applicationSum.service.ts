@@ -110,29 +110,29 @@ export class ApplicationSumService {
 
     //video section
     // video analysis video url , appID -> candidateInterview -> interviewResponse -> questionID, order, videoUrl
-    const videosResponses = await this.videoAiAnalysisModel.find({applicationId:new Types.ObjectId(applicationId)});
+    const videosResponses = await this.videoAiAnalysisModel.findOne({applicationId:new Types.ObjectId(applicationId)});
     const candidateInterview = await this.candidateInterviewModel.findOne({applicationId:new Types.ObjectId(applicationId)});
     const interviewData : VideoAnalysisSectionDto[] = [];
     let overallScore = 0;
-    for (const response of videosResponses) {
+    for (const response of videosResponses.videos) {
         const interviewResponse = await this.interviewResponseModel.findOne({
             candidateInterviewId: candidateInterview._id,
-            response: response.videoUrl,
+            response: response.videoS3Key,
         });
 
         const question = await this.interviewQuestionModel.findById(
             interviewResponse.questionId,
         );
 
-        const videoURL = await this.uploadService.getVideoUrlByKey(response.videoUrl);
-        overallScore += response.overallInterviewScore;
+        const videoURL = await this.uploadService.getVideoUrlByKey(response.videoS3Key);
+        overallScore += response.overall_interview_score;
         interviewData.push({
             order: interviewResponse.responseOrder,
             question: question?.question,
             videoURL: videoURL,
-            transcription: response.transcribe,
-            bodyLanguage: response.bodyLanguage.scores.overall_body_score,
-            confidence: response.bodyLanguage.scores.confidence_score,
+            transcription: response.transcription,
+            bodyLanguage: response.body_language.scores.overall_body_score,
+            confidence: response.body_language.scores.confidence_score,
             englishLevel: response.audio.english_level,
             communication: response.audio.audio_score,
         });

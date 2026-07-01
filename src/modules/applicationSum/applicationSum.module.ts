@@ -24,11 +24,13 @@ import { VideoAiAnalysis, VideoAiAnalysisSchema } from 'src/database/schemas/vid
 import { CandidateInterviewSchema,CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
 import { InterviewResponse,InterviewResponseSchema } from 'src/database/schemas/interview_responses.schema';
 import { RecruiterNoteDocument,RecruiterNote, RecruiterNoteSchema } from 'src/database/schemas/recruiter_notes.schema';
+import { UploadModule } from 'src/upload/upload.module';
 
 @Module({
   imports: [
     AuthModule,
     AiMatchingModule,
+    UploadModule,
     MongooseModule.forFeature([
       { name: JobApplication.name, schema: JobApplicationSchema },
       { name: Candidate.name, schema: CandidateSchema },

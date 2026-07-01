@@ -42,7 +42,7 @@ export class HistoricalDashboardService {
 
     // for total applications
     private async getTotalApplicationCount(userId: Types.ObjectId) {
-        const jobs = await this.jobModel.find({ hr: userId }).exec();
+        const jobs = await this.jobModel.find({ createdBy: userId }).exec();
         let applications = 0;
         for (const job of jobs) {
             applications += await this.jobApplicationModel.countDocuments({ jobId: job._id })
@@ -64,11 +64,13 @@ export class HistoricalDashboardService {
                 }
             }).exec();
         }
+        console.log(`applications for month ${date} are: `,applications);
         return applications;
     }
 
     private async getHRJobs(userId: Types.ObjectId): Promise<JobDocument[]> {
-        return await this.jobModel.find({ hr: userId }).exec();
+        console.log('userID',userId);
+        return await this.jobModel.find({ createdBy: userId }).exec();
     }
 
     private async computeInterviewRate(userId: Types.ObjectId, jobs: JobDocument[]) {
@@ -193,8 +195,12 @@ export class HistoricalDashboardService {
         } else if (filter === InflowFilter.LAST_YEAR) {
             startDate = new Date(now.getFullYear(), 0, 1);
         }
+        const jobs = await this.getHRJobs(userId);
+        const jobIds = jobs.map(job => job._id);
 
-        const matchStage: any = { hrId: userId };
+        const matchStage: any = {
+            jobId: { $in: jobIds }
+        };
         if (startDate) {
             matchStage.appliedAt = { $gte: startDate };
         }
@@ -269,7 +275,7 @@ export class HistoricalDashboardService {
     private async generateActiveJobs(userId: Types.ObjectId, page: number, limit: number) {
 
         const jobs = await this.jobModel.find({
-            hr: userId,
+            createdBy: userId,
             interviewEndDate: {
                 $gte: new Date()
             }
@@ -335,7 +341,7 @@ export class HistoricalDashboardService {
             }
         } = query;
         const hrJobs = await this.getHRJobs(user._id);
-        if (!hrJobs) throw new NotFoundException('Did not Find any jobs for this user');
+        if (hrJobs.length==0) throw new NotFoundException('Did not Find any jobs for this user');
 
         //---- header data
         const totalApplications = await this.getTotalApplicationCount(user._id);
