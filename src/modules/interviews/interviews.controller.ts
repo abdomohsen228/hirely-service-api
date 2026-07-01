@@ -34,15 +34,6 @@ export class InterviewsController {
     return this.interviewsService.getInterviewInstructions(user);
   }
 
-  @Get('/test')
-  @ApiOperation({ summary: 'Candidate: get test interview sample' })
-  @ApiResponse({ type: InterviewInstructionsResponseDto })
-  public async getInterviewTest(
-    @CurrentUser() user: UserDocument,
-  ): Promise<InterviewInstructionsResponseDto> {
-    return this.interviewsService.getInterviewInstructions(user);
-  }
-
   @Get('applications/me/:applicationId/interview')
   @ApiOperation({ summary: 'Candidate: get interview session for an application' })
   @ApiParam({ name: 'applicationId', description: 'Application id' })
