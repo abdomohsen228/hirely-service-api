@@ -89,3 +89,4 @@ export class VideoAiAnalysis extends Document {
 
 export const VideoAiAnalysisSchema =
   SchemaFactory.createForClass(VideoAiAnalysis);
+

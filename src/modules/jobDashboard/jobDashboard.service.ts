@@ -24,6 +24,7 @@ import { ApplicationSummaryResponseDto } from './dtos/response/applicationSummar
 import { Types } from 'mongoose';
 import { JobDocument } from 'src/database/schemas/jobs.schema';
 import { ApplicationStatus } from 'src/database/enums/applicationStatus.enum';
+import { VideoAiAnalysisDocument } from 'src/database/schemas/video_ai_analysis.schema';
 
 @Injectable()
 export class JobDashboardService {
@@ -35,6 +36,7 @@ export class JobDashboardService {
     private readonly candidateModel: Model<CandidateDocument>,
     @InjectModel('Job') private readonly jobModel: Model<JobDocument>,
     private readonly exportService: ExportService,
+    @InjectModel('VideoAiAnalysis') private readonly videoAiAnalysisModel: Model<VideoAiAnalysisDocument>,
   ) {}
 
   private assertHrUser(user: UserDocument): void {
@@ -123,6 +125,10 @@ export class JobDashboardService {
     return this.candidateModel.findById(candidateId).exec();
   }
 
+  private async getCVRank(applicationId: string){
+
+  }
+
   public async getJobDashboard(
     userPayload: UserDocument,
     jobId: string,
@@ -155,6 +161,7 @@ export class JobDashboardService {
       applicationStatus,
       matchScore,
     );
+    // const CVRank = await this.
     const dashboardData = [] as DashboardDataDto[];
     for (const application of applications) {
       const candidateInfo = await this.getCandidateInfo(
