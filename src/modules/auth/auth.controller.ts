@@ -10,6 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { LoginRequestDto } from './dtos/request/loginRequest.dto';
 import { UserDataDto } from './dtos/response/userDataResponse.dto';
@@ -38,7 +39,10 @@ import { MessageResponseDto } from './dtos/response/messageResponse.dto';
 @ApiBearerAuth()
 @Controller('/auth')
 export class AuthController {
-  constructor(private readonly authServices: AuthService) {}
+  constructor(
+    private readonly authServices: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
   @Post('/login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login user and generate JWT token' })
@@ -140,10 +144,15 @@ export class AuthController {
   ): Promise<void> {
     const response = await this.authServices.googleValidateUser(req.user);
 
-    const { token, isProfileCompleted } = response;
+    const { token, user, isProfileCompleted, isNewUser } = response;
+
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const frontendUrl = isDevelopment
+      ? this.configService.get<string>('FRONTEND_LOCAL_URL') ?? 'http://localhost:5173'
+      : this.configService.get<string>('FRONTEND_PROD_URL') ?? 'http://localhost:5173';
 
     return res.redirect(
-      `http://localhost:5173/auth/callback?token=${token}&isNewUser=${!isProfileCompleted}`,
+      `${frontendUrl}/auth/callback?token=${token}&role=${user.role}&isProfileCompleted=${isProfileCompleted}&isNewUser=${isNewUser}`,
     );
   }
 

@@ -1,5 +1,5 @@
 export enum DashboardExportFormat {
     CSV = 'csv',
-    EXCEL = 'excel',
+    EXCEL = 'xlsx',
     PDF = 'pdf'
 }

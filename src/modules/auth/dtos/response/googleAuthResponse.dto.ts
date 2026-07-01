@@ -4,4 +4,5 @@ export class GoogleAuthResponseDto {
   token: string;
   user: User;
   isProfileCompleted: boolean;
+  isNewUser: boolean;
 }

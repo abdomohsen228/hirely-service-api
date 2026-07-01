@@ -46,6 +46,15 @@ export class JobApplication extends Document {
   /** High-level note for candidate (rejection reason, offer note, etc.). */
   @Prop()
   feedbackSummary?: string;
+
+  @Prop()
+  interviewed?: boolean;
+
+  @Prop()
+  hiredAt?: Date;
+
+  @Prop({ default: false })
+  videosProcessedByAi?: boolean;
 }
 
 export const JobApplicationSchema =

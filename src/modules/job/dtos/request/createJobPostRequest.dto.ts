@@ -16,7 +16,7 @@ import {
 } from 'class-validator';
 import { ExperienceLevel } from 'src/database/enums/experienceYears.enum';
 import { JobType } from 'src/database/enums/jobType.enum';
-
+import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
 export class CreateJobPostRequestDto {
   @ApiProperty({ example: 'Senior Backend Engineer' })
   @IsString()
@@ -135,4 +135,14 @@ export class CreateJobPostRequestDto {
   @Min(1)
   @Max(12)
   sprintDuration: number;
+
+  
+  @ApiPropertyOptional({
+    example:WorkplaceTypeFilter.HYBRID,
+    description: 'The place the candidate will be working from'
+  })
+  @IsOptional()
+  @IsEnum(WorkplaceTypeFilter)
+
+  workplaceType:WorkplaceTypeFilter;
 }

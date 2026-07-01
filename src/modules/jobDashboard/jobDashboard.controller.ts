@@ -1,5 +1,20 @@
-import { Controller, Get, Res, Patch, Body, Param, UseGuards, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Res,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guards';
 import { CurrentUser } from 'src/decorators/currentPayload';
 import { UserDocument } from 'src/database/schemas/user.schema';
@@ -12,6 +27,8 @@ import { DashboardDataDto } from './dtos/response/dashboardData.dto';
 import { jobDasboardExportRequestDto } from './dtos/request/jobDashboardExportRequest.dto';
 import { Response } from 'express';
 import { ApplicationSummaryResponseDto } from './dtos/response/applicationSummaryResponse.dto';
+
+@ApiTags('JobDashboard')
 @ApiBearerAuth('access-token')
 @UseGuards(AuthGuard)
 @Controller('jobs/:jobId/dashboard')
@@ -25,13 +42,13 @@ export class JobDashboardController {
     status: 200,
     description: 'Job dashboard data retrieved successfully',
     type: JobDashboardResponseDto,
-    })
-    public async getJobDashboard(
+  })
+  public async getJobDashboard(
     @CurrentUser() userPayload: UserDocument,
     @Param('jobId') jobId: string,
-    @Query() query: JobDashboardRequestDto
+    @Query() query: JobDashboardRequestDto,
   ): Promise<JobDashboardResponseDto> {
-    return this.jobDashboardService.getJobDashboard( userPayload,jobId, query);
+    return this.jobDashboardService.getJobDashboard(userPayload, jobId, query);
   }
 
   // update application status from dashboard
@@ -42,13 +59,17 @@ export class JobDashboardController {
     status: 200,
     description: 'Job application status updated successfully',
     type: DashboardDataDto,
-    })
+  })
   public async updateApplicationStatus(
     @CurrentUser() userPayload: UserDocument,
     @Param('applicationId') applicationId: string,
     @Body() dto: UpdateJobDashboardApplicationRequestDto,
   ): Promise<DashboardDataDto> {
-    return this.jobDashboardService.updateApplicationStatus(userPayload, applicationId, dto);
+    return this.jobDashboardService.updateApplicationStatus(
+      userPayload,
+      applicationId,
+      dto,
+    );
   }
 
   // get candidate email from dashboard
@@ -68,7 +89,12 @@ export class JobDashboardController {
     @Param('jobId') jobId: string,
     @Res() res: Response,
   ) {
-    return this.jobDashboardService.exportDashboardData(userPayload, jobId, query, res);
+    return this.jobDashboardService.exportDashboardData(
+      userPayload,
+      jobId,
+      query,
+      res,
+    );
   }
 
   // get candidate application summary
@@ -84,6 +110,11 @@ export class JobDashboardController {
     @CurrentUser() userPayload: UserDocument,
     @Param('applicationId') applicationId: string,
   ): Promise<ApplicationSummaryResponseDto> {
-    return this.jobDashboardService.getApplicationSummary(userPayload, applicationId);
+    return this.jobDashboardService.getApplicationSummary(
+      userPayload,
+      applicationId,
+    );
   }
+
+  // end job by sending feedbacks to the candidates and final results
 }

@@ -13,9 +13,20 @@ export class InterviewResponse extends Document {
   @Prop({ required: true })
   response: string; // Candidate's answer to the question
 
+  @Prop({ required: false })
+  responseOrder: number; // Candidate's answer to the question
+
   @Prop({ required: true })
   transcription: string;
 
   @Prop({ required: true })
   responseDuration: number; // Duration in seconds that the candidate took to answer the question
 }
+
+export const InterviewResponseSchema =
+  SchemaFactory.createForClass(InterviewResponse);
+
+InterviewResponseSchema.index(
+  { candidateInterviewId: 1, questionId: 1 },
+  { unique: true },
+);
