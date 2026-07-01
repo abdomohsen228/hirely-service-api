@@ -1,5 +1,6 @@
 export interface VideoAnalysisRequest {
   video_urls: string[];
+  videoS3Keys: string[];
   user_id: string;
   whisper_model?: string;
 }
@@ -46,6 +47,8 @@ export interface VideoAnalysisResponse {
 
 export interface VideoAnalysisResult {
   video_url: string;
+  videoS3Key: string;
+  transcription: string;
   body_language: {
     scores: {
       eye_contact_score: number;

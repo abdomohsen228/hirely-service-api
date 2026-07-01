@@ -1,6 +1,6 @@
-import {Injectable, Logger} from '@nestjs/common';
-import {Cron} from '@nestjs/schedule';
-import {ApplicationsService} from './applications.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { ApplicationsService } from './applications.service';
 
 @Injectable()
 export class ApplicationsScheduler {
@@ -14,14 +14,14 @@ export class ApplicationsScheduler {
   }
 
   @Cron('0 0 * * *')
-  async moveApplicationsTointerview(){
+  async moveApplicationsTointerview() {
     this.logger.log('Running scheduled task: moveApplicationsTointerview');
     await this.applicationsService.moveApplicationsTointerview();
   }
 
   @Cron(`0 0 * * *`)
-  async rejectOverDueInterviews(){
-    this.logger.log('Runing scheduled task: rejectOverDueInterviews')
+  async rejectOverDueInterviews() {
+    this.logger.log('Runing scheduled task: rejectOverDueInterviews');
     await this.applicationsService.rejectOverDueInterviews();
   }
 }

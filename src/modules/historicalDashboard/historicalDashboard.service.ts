@@ -294,8 +294,7 @@ export class HistoricalDashboardService {
             const now = new Date();
 
             if (now >= job.interviewStartDate) {
-
-                const totalDuration = Math.abs(job.interviewEndDate.getTime() - job.interviewStartDate.getTime());
+                const totalDuration = now.getTime() - job.interviewStartDate.getTime();;
                 hiring_progress = (totalDuration / job.sprintDuration) * 100;
 
                 if (hiring_progress > 100) hiring_progress = 100;
@@ -449,6 +448,5 @@ export class HistoricalDashboardService {
         }
     }
 
-    
 }
 
