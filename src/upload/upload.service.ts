@@ -330,6 +330,11 @@ export class UploadService {
     }
   }
 
+  public async getLogoUrl(){
+    const key = 'hirely-icon.png';
+    return this.s3Service.getUrl({ key, bucket: this.bucket });
+  }
+
   // async validateVideoUpload(key: string, status: string, reason: string) {
   //     const user = await this.userModel.findOne({ videoUrl: key });
   //     if (!user) {

@@ -83,6 +83,10 @@ export class UploadController {
     });
   }
 
+  @Get('logo')
+  async getLogoUrl() {
+    return this.uploadService.getLogoUrl();
+  }
   // @Get('test')
   // testS3Connection() {
   //   return this.uploadService.testConnection();

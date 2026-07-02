@@ -25,11 +25,14 @@ import { AuthModule } from '../auth/auth.module';
 import { S3Module } from 'src/s3/s3.module';
 import { InterviewSumController } from './interviewSum.controller';
 import { InterviewSumService } from './interviewSum.service';
+import { VideoAiAnalysis, VideoAiAnalysisSchema } from 'src/database/schemas/video_ai_analysis.schema';
+import { UploadModule } from 'src/upload/upload.module';
 
 @Module({
   imports: [
     forwardRef(() => AuthModule),
     S3Module,
+    UploadModule,
     MongooseModule.forFeature([
       { name: JobApplication.name, schema: JobApplicationSchema },
       { name: Candidate.name, schema: CandidateSchema },
@@ -37,6 +40,7 @@ import { InterviewSumService } from './interviewSum.service';
       { name: InterviewQuestion.name, schema: InterviewQuestionSchema },
       { name: CandidateInterview.name, schema: CandidateInterviewSchema },
       { name: InterviewResponse.name, schema: InterviewResponseSchema },
+        { name: VideoAiAnalysis.name, schema: VideoAiAnalysisSchema },
     ]),
   ],
   controllers: [InterviewSumController],
