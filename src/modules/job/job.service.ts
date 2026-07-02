@@ -464,6 +464,26 @@ export class JobService {
     const skip = (page - 1) * limit;
     const candidate = await this.getCandidateForUser(user);
 
+    this.logger.log(
+      `[getTopMatchJobs] Fetching matches for candidate ${candidate._id}`,
+    );
+
+    // Check if candidate has any UserJobScore records
+    const scoreCount = await this.userJobScoreModel
+      .countDocuments({ candidateId: candidate._id })
+      .exec();
+    this.logger.log(
+      `[getTopMatchJobs] Candidate has ${scoreCount} UserJobScore records`,
+    );
+
+    // Check if there are any open jobs
+    const openJobsCount = await this.jobModel
+      .countDocuments({ status: JobStatus.OPEN })
+      .exec();
+    this.logger.log(
+      `[getTopMatchJobs] Total open jobs in system: ${openJobsCount}`,
+    );
+
     const jobCollection = this.jobModel.collection.name;
     const [result] = await this.userJobScoreModel
       .aggregate<{
@@ -494,6 +514,10 @@ export class JobService {
         },
       ])
       .exec();
+
+    this.logger.log(
+      `[getTopMatchJobs] Aggregation result: ${JSON.stringify(result)}`,
+    );
 
     const total = result?.metadata[0]?.total ?? 0;
     const data = result?.data ?? [];
