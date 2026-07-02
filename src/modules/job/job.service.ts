@@ -476,88 +476,49 @@ export class JobService {
       `[getTopMatchJobs] Candidate has ${scoreCount} UserJobScore records`,
     );
 
-    // Check if there are any open jobs
-    const openJobsCount = await this.jobModel
-      .countDocuments({ status: JobStatus.OPEN })
-      .exec();
-    this.logger.log(
-      `[getTopMatchJobs] Total open jobs in system: ${openJobsCount}`,
-    );
-
-    const jobCollection = this.jobModel.collection.name;
-    
-    // Debug: Check sample UserJobScore documents
-    const sampleScores = await this.userJobScoreModel
+    // Get all UserJobScore records for this candidate
+    const userJobScores = await this.userJobScoreModel
       .find({ candidateId: candidate._id })
-      .limit(3)
-      .exec();
-    this.logger.log(
-      `[getTopMatchJobs] Sample UserJobScore records: ${JSON.stringify(sampleScores.map(s => ({ jobId: s.jobId, score: s.score })))}`,
-    );
-
-    // Debug: Check if those jobIds exist in jobs collection
-    if (sampleScores.length > 0) {
-      const sampleJobIds = sampleScores.map(s => s.jobId);
-      const foundJobs = await this.jobModel
-        .find({ _id: { $in: sampleJobIds } })
-        .select('_id status')
-        .exec();
-      this.logger.log(
-        `[getTopMatchJobs] Jobs found for sample IDs: ${JSON.stringify(foundJobs.map(j => ({ _id: j._id, status: j.status })))}`,
-      );
-    }
-
-    const [result] = await this.userJobScoreModel
-      .aggregate<{
-        metadata: { total: number }[];
-        data: {
-          score: number;
-          matchedSkills: string[];
-          job: JobDocument;
-        }[];
-      }>([
-        { $match: { candidateId: candidate._id } },
-        {
-          $lookup: {
-            from: jobCollection,
-            localField: 'jobId',
-            foreignField: '_id',
-            as: 'job',
-          },
-        },
-        { $unwind: '$job' },
-        { $match: { 'job.status': JobStatus.OPEN } },
-        { $sort: { score: -1 } },
-        {
-          $facet: {
-            metadata: [{ $count: 'total' }],
-            data: [{ $skip: skip }, { $limit: limit }],
-          },
-        },
-      ])
+      .sort({ score: -1 })
       .exec();
 
-    this.logger.log(
-      `[getTopMatchJobs] Aggregation result: ${JSON.stringify(result)}`,
-    );
+    // Get job IDs from scores
+    const jobIds = userJobScores.map((score) => score.jobId);
 
-    const total = result?.metadata[0]?.total ?? 0;
-    const data = result?.data ?? [];
+    // Fetch all matching jobs that are OPEN
+    const jobs = await this.jobModel
+      .find({ _id: { $in: jobIds }, status: JobStatus.OPEN })
+      .exec();
 
-    const jobIds = data.map((entry) => entry.job._id);
-    const jobs = await this.jobModel.find({ _id: { $in: jobIds } }).exec();
     const jobsById = new Map(jobs.map((job) => [job._id.toString(), job]));
 
-    const items: RecommendedJobItemResponseDto[] = [];
-    for (const entry of data) {
-      const job = jobsById.get(entry.job._id.toString());
-      if (!job) {
-        continue;
+    // Build the response by matching scores with jobs
+    const matchedItems: {
+      score: number;
+      matchedSkills: string[];
+      job: JobDocument;
+    }[] = [];
+
+    for (const score of userJobScores) {
+      const job = jobsById.get(score.jobId.toString());
+      if (job) {
+        matchedItems.push({
+          score: score.score,
+          matchedSkills: score.matchedSkills ?? [],
+          job,
+        });
       }
+    }
+
+    const total = matchedItems.length;
+    const paginatedItems = matchedItems.slice(skip, skip + limit);
+
+    const items: RecommendedJobItemResponseDto[] = [];
+    for (const item of paginatedItems) {
       items.push({
-        job: await this.toResponse(job, null, undefined, entry.score),
-        score: entry.score,
-        matchedSkills: entry.matchedSkills ?? [],
+        job: await this.toResponse(item.job, null, undefined, item.score),
+        score: item.score,
+        matchedSkills: item.matchedSkills,
       });
     }
 
