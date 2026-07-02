@@ -140,6 +140,7 @@ export class AuthService {
       username: emailPrefix,
       profilePictureUrl: dto.profilePictureUrl,
       cvFileUrl: dto.cvFileUrl,
+      user: user._id,
     });
 
     this.aiMatchingService.computeScoresForCandidate(candidate).catch((err) => {
