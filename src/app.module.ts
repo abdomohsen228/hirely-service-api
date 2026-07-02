@@ -17,6 +17,7 @@ import { ApplicationsModule } from './modules/applications/applications.module';
 import { InterviewsModule } from './modules/interviews/interviews.module';
 import { HistoricalDashboardModule } from './modules/historicalDashboard/historicalDashboard.module';
 import { ApplicationSumModule } from './modules/applicationSum/applicationSum.module';
+import { InterviewSumModule } from './modules/interviewSum/interviewSum.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -45,6 +46,7 @@ import { ApplicationSumModule } from './modules/applicationSum/applicationSum.mo
     InterviewsModule,
     HistoricalDashboardModule,
     ApplicationSumModule,
+    InterviewSumModule,
     // BullModule.forRoot({
     //   connection: {
     //     host: process.env.REDIS_HOST,
