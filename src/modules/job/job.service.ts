@@ -485,6 +485,28 @@ export class JobService {
     );
 
     const jobCollection = this.jobModel.collection.name;
+    
+    // Debug: Check sample UserJobScore documents
+    const sampleScores = await this.userJobScoreModel
+      .find({ candidateId: candidate._id })
+      .limit(3)
+      .exec();
+    this.logger.log(
+      `[getTopMatchJobs] Sample UserJobScore records: ${JSON.stringify(sampleScores.map(s => ({ jobId: s.jobId, score: s.score })))}`,
+    );
+
+    // Debug: Check if those jobIds exist in jobs collection
+    if (sampleScores.length > 0) {
+      const sampleJobIds = sampleScores.map(s => s.jobId);
+      const foundJobs = await this.jobModel
+        .find({ _id: { $in: sampleJobIds } })
+        .select('_id status')
+        .exec();
+      this.logger.log(
+        `[getTopMatchJobs] Jobs found for sample IDs: ${JSON.stringify(foundJobs.map(j => ({ _id: j._id, status: j.status })))}`,
+      );
+    }
+
     const [result] = await this.userJobScoreModel
       .aggregate<{
         metadata: { total: number }[];
