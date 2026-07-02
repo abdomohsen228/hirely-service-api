@@ -13,6 +13,11 @@ export class ActiveHiringProcessFieldDto{
     
     @ApiProperty({ description:'The end date of the hiring process for the target job'})
     target_date: Date;
+    
+    @ApiProperty({ description:'The ID of the job'})
+    jobId: string;
+
+
 
     
 }

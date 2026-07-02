@@ -291,6 +291,7 @@ export class HistoricalDashboardService {
             department: string; 
             hiring_progress: number; 
             target_date: Date; 
+            jobId: string;
             }[] = [];
         for (const job of paginatedData) {
             const role_name = job.title;
@@ -315,7 +316,8 @@ export class HistoricalDashboardService {
                 role_name: role_name,
                 department: department,
                 hiring_progress: hiring_progress,
-                target_date: target_date
+                target_date: target_date,
+                jobId: job._id.toString()
             });
         }
 
@@ -437,7 +439,8 @@ export class HistoricalDashboardService {
                 Role_name: activeJob.role_name,
                 department: activeJob.department,
                 hiring_progress: activeJob.hiring_progress,
-                target_date: activeJob.target_date
+                target_date: activeJob.target_date,
+                jobId: activeJob.jobId
             })
         }
         const active_hiring_process: ActiveHiringProcessDto = {
@@ -454,5 +457,21 @@ export class HistoricalDashboardService {
         }
     }
 
+    public async getJobOpenings(user: UserDocument): Promise<ActiveHiringProcessFieldDto[]> {
+        this.assertHrUser(user);
+        const hrJobs = await this.getHRJobs(user._id);
+        if (hrJobs.length==0) throw new NotFoundException('Did not Find any jobs for this user');
+        const activeJobs = await this.generateActiveJobs(user._id, 1, hrJobs.length);
+        const res: ActiveHiringProcessFieldDto[] = [];
+        for (const job of activeJobs.activeJobs) {
+            res.push({
+                Role_name: job.role_name,
+                department: job.department,
+                hiring_progress: job.hiring_progress,
+                target_date: job.target_date,
+                jobId: job.jobId
+            })
+        }
+        return res;
+    };
 }
-
