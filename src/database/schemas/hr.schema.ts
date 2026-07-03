@@ -3,30 +3,19 @@ import { Document } from 'mongoose';
 import { profileStatus } from '../enums/user-profileStatus.enum';
 import { CompanyIndustry } from '../enums/companyIndustry.enum';
 import { CompanySize } from '../enums/companySize.enum';
+import { User } from './user.schema';
 
-export type HrDocument = Hr & Document;
+export type HrDocument = Hr & User;
 
 @Schema({ timestamps: true })
 export class Hr extends Document {
   @Prop({ required: true })
-  fName: string;
-  
-  @Prop({ required: true })
-  lName: string;
-
-  @Prop({ required: true })
-  fullName: string;  
+  fullName: string;
 
   @Prop({ required: true, unique: true, lowercase: true })
   username: string;
-  
-  @Prop({ required: true, unique: true, lowercase: true })
-  email: string;
 
-  @Prop({ required: true })
-  hashedPassword: string;
-
-  @Prop( { required: true , unique: true })
+  @Prop({ required: true, unique: true })
   phoneNumber: string;
 
   @Prop({ required: true })
@@ -34,6 +23,9 @@ export class Hr extends Document {
 
   @Prop()
   companyWebsite: string;
+
+  @Prop({ maxlength: 1000 })
+  companySummary: string;
 
   @Prop({
     type: String,
@@ -63,7 +55,7 @@ export class Hr extends Document {
   emailVerified: boolean;
 
   @Prop()
-  lastLogin: Date;  // why
+  lastLogin: Date; // why
 }
 
 export const HrSchema = SchemaFactory.createForClass(Hr);
