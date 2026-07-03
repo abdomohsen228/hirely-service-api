@@ -13,13 +13,22 @@ export class UploadController {
   ) {}
 
   @Post('video')
+  @UseGuards(AuthGuard)
   createVideoUpload(@Req() req: any, @Body() body: any) {
     return this.uploadService.createVideoUploadUrl({
       userId: req.user?.id?.tostring(),
       fileName: body.fileName,
       contentType: body.contentType,
       role: req.user.role,
+      order: body.order,
+      application: body.application
     });
+  }
+
+  @Get('video')
+  @UseGuards(AuthGuard)
+  getVideoUrl(@Req() req: any, @Param('applicationId') applicationId:string,@Param('order') order:number) {
+    return this.uploadService.getVideoUrl(applicationId,order);
   }
 
   @Post('image')
@@ -74,6 +83,10 @@ export class UploadController {
     });
   }
 
+  @Get('logo')
+  async getLogoUrl() {
+    return this.uploadService.getLogoUrl();
+  }
   // @Get('test')
   // testS3Connection() {
   //   return this.uploadService.testConnection();

@@ -18,14 +18,14 @@ import {
   UserJobScore,
   UserJobScoreSchema,
 } from 'src/database/schemas/user_job_score.schema';
-
+import { forwardRef } from '@nestjs/common';
 @Module({
   controllers: [AuthController],
   providers: [AuthService, AuthGuard, GoogleStrategy],
   imports: [
     ConfigModule,
-    AiMatchingModule,
     EmailModule,
+    forwardRef(()=>AiMatchingModule),
 
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },

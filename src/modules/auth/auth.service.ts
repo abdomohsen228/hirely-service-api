@@ -39,6 +39,8 @@ import { ForgotPasswordRequestDto } from './dtos/request/forgotPasswordRequest.d
 import { ResetPasswordRequestDto } from './dtos/request/resetPasswordRequest.dto';
 import { MessageResponseDto } from './dtos/response/messageResponse.dto';
 import { EmailService } from '../email/email.service';
+import { forwardRef, Inject } from '@nestjs/common';
+
 
 const PASSWORD_RESET_SUCCESS_MESSAGE =
   'If an account exists with this email, a password reset link has been sent.';
@@ -55,6 +57,7 @@ export class AuthService {
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(UserJobScore.name)
     private readonly userJobScoreModel: Model<UserJobScoreDocument>,
+    @Inject(forwardRef(() => AiMatchingService))
     private readonly aiMatchingService: AiMatchingService,
   ) {}
 
@@ -137,6 +140,7 @@ export class AuthService {
       username: emailPrefix,
       profilePictureUrl: dto.profilePictureUrl,
       cvFileUrl: dto.cvFileUrl,
+      user: user._id,
     });
 
     this.aiMatchingService.computeScoresForCandidate(candidate).catch((err) => {
@@ -292,11 +296,13 @@ export class AuthService {
         email: user.email,
         role: user.role,
         tokenVersion: user.tokenVersion,
+        
       });
       return {
         token,
         user,
         isProfileCompleted: user.isProfileCompleted,
+        isNewUser: false,
       };
     }
     user = await this.userModel.create({
@@ -319,6 +325,7 @@ export class AuthService {
       token,
       user,
       isProfileCompleted: false,
+      isNewUser: true,
     };
   }
 

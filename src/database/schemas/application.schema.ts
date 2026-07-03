@@ -52,6 +52,12 @@ export class JobApplication extends Document {
 
   @Prop()
   hiredAt?: Date;
+
+  @Prop({ default: false })
+  videosProcessedByAi?: boolean;
+
+  @Prop()
+  recruiterNotes?: string[];
 }
 
 export const JobApplicationSchema =

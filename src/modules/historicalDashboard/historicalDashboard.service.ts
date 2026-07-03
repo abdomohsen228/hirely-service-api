@@ -31,7 +31,7 @@ export class HistoricalDashboardService {
         @InjectModel('JobApplication') private readonly jobApplicationModel: Model<JobApplicationDocument>,
         @InjectModel('Candidate') private readonly candidateModel: Model<CandidateDocument>,
         @InjectModel('Job') private readonly jobModel: Model<JobDocument>,
-        private readonly jobDashboardService: JobDashboardService
+        // private readonly jobDashboardService: JobDashboardService
     ) { }
 
     private assertHrUser(user: UserDocument): void {
@@ -42,7 +42,7 @@ export class HistoricalDashboardService {
 
     // for total applications
     private async getTotalApplicationCount(userId: Types.ObjectId) {
-        const jobs = await this.jobModel.find({ hr: userId }).exec();
+        const jobs = await this.jobModel.find({ createdBy: userId }).exec();
         let applications = 0;
         for (const job of jobs) {
             applications += await this.jobApplicationModel.countDocuments({ jobId: job._id })
@@ -64,11 +64,13 @@ export class HistoricalDashboardService {
                 }
             }).exec();
         }
+        console.log(`applications for month ${date} are: `,applications);
         return applications;
     }
 
     private async getHRJobs(userId: Types.ObjectId): Promise<JobDocument[]> {
-        return await this.jobModel.find({ hr: userId }).exec();
+        console.log('userID',userId);
+        return await this.jobModel.find({ createdBy: userId }).exec();
     }
 
     private async computeInterviewRate(userId: Types.ObjectId, jobs: JobDocument[]) {
@@ -193,8 +195,12 @@ export class HistoricalDashboardService {
         } else if (filter === InflowFilter.LAST_YEAR) {
             startDate = new Date(now.getFullYear(), 0, 1);
         }
+        const jobs = await this.getHRJobs(userId);
+        const jobIds = jobs.map(job => job._id);
 
-        const matchStage: any = { hrId: userId };
+        const matchStage: any = {
+            jobId: { $in: jobIds }
+        };
         if (startDate) {
             matchStage.appliedAt = { $gte: startDate };
         }
@@ -269,7 +275,7 @@ export class HistoricalDashboardService {
     private async generateActiveJobs(userId: Types.ObjectId, page: number, limit: number) {
 
         const jobs = await this.jobModel.find({
-            hr: userId,
+            createdBy: userId,
             interviewEndDate: {
                 $gte: new Date()
             }
@@ -285,6 +291,7 @@ export class HistoricalDashboardService {
             department: string; 
             hiring_progress: number; 
             target_date: Date; 
+            jobId: string;
             }[] = [];
         for (const job of paginatedData) {
             const role_name = job.title;
@@ -294,8 +301,7 @@ export class HistoricalDashboardService {
             const now = new Date();
 
             if (now >= job.interviewStartDate) {
-
-                const totalDuration = Math.abs(job.interviewEndDate.getTime() - job.interviewStartDate.getTime());
+                const totalDuration = now.getTime() - job.interviewStartDate.getTime();;
                 hiring_progress = (totalDuration / job.sprintDuration) * 100;
 
                 if (hiring_progress > 100) hiring_progress = 100;
@@ -310,7 +316,8 @@ export class HistoricalDashboardService {
                 role_name: role_name,
                 department: department,
                 hiring_progress: hiring_progress,
-                target_date: target_date
+                target_date: target_date,
+                jobId: job._id.toString()
             });
         }
 
@@ -336,7 +343,7 @@ export class HistoricalDashboardService {
             }
         } = query;
         const hrJobs = await this.getHRJobs(user._id);
-        if (!hrJobs) throw new NotFoundException('Did not Find any jobs for this user');
+        if (hrJobs.length==0) throw new NotFoundException('Did not Find any jobs for this user');
 
         //---- header data
         const totalApplications = await this.getTotalApplicationCount(user._id);
@@ -432,7 +439,8 @@ export class HistoricalDashboardService {
                 Role_name: activeJob.role_name,
                 department: activeJob.department,
                 hiring_progress: activeJob.hiring_progress,
-                target_date: activeJob.target_date
+                target_date: activeJob.target_date,
+                jobId: activeJob.jobId
             })
         }
         const active_hiring_process: ActiveHiringProcessDto = {
@@ -449,6 +457,21 @@ export class HistoricalDashboardService {
         }
     }
 
-    
+    public async getJobOpenings(user: UserDocument): Promise<ActiveHiringProcessFieldDto[]> {
+        this.assertHrUser(user);
+        const hrJobs = await this.getHRJobs(user._id);
+        if (hrJobs.length==0) throw new NotFoundException('Did not Find any jobs for this user');
+        const activeJobs = await this.generateActiveJobs(user._id, 1, hrJobs.length);
+        const res: ActiveHiringProcessFieldDto[] = [];
+        for (const job of activeJobs.activeJobs) {
+            res.push({
+                Role_name: job.role_name,
+                department: job.department,
+                hiring_progress: job.hiring_progress,
+                target_date: job.target_date,
+                jobId: job.jobId
+            })
+        }
+        return res;
+    };
 }
-
