@@ -362,7 +362,7 @@ export class JobService {
       );
     });
 
-    return this.toResponse(created, hrProfile);
+    return await this.toResponse(created, hrProfile);
   }
 
   public async listJobPosts(
@@ -466,16 +466,19 @@ export class JobService {
       appliedJobIds = new Set(applications.map((a) => a.jobId.toString()));
       matchScoresByJobId = matchScores;
     }
+    const items = await Promise.all(
+  docs.map((d) =>
+    this.toResponse(
+      d,
+      null,
+      appliedJobIds.has(d._id.toString()),
+      matchScoresByJobId.get(d._id.toString()),
+    ),
+  ),
+);
 
     return {
-      items: docs.map((d) =>
-        this.toResponse(
-          d,
-          null,
-          appliedJobIds.has(d._id.toString()),
-          matchScoresByJobId.get(d._id.toString()),
-        ),
-      ),
+      items,
       total,
       page,
       limit,
@@ -605,7 +608,12 @@ export class JobService {
     const hrProfile = doc.hr
       ? await this.hrModel.findById(doc.hr).exec()
       : null;
-    return this.toResponse(doc, hrProfile, isCandidateApply, matchScore);
+    return await this.toResponse(
+     doc,
+     hrProfile,
+     isCandidateApply,
+     matchScore,
+   );
   }
 
   public async applyToJob(
