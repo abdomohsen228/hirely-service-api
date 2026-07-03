@@ -79,9 +79,25 @@ export class ApplicationSumService {
   }
 
   private async getUser(applicationId: string){
-    const application = await this.jobApplicationModel.findOne(new Types.ObjectId(applicationId));
-    const candidateId = application.candidateId;
-    return await this.userModel.findOne(candidateId);
+    const application = await this.jobApplicationModel.findById(new Types.ObjectId(applicationId));
+    if(!application) {
+      throw new NotFoundException('Application not found');
+    }
+    const candidate = await this.candidateModel.findById(application.candidateId);
+    if(!candidate) {
+      throw new NotFoundException('Candidate not found for the given application');
+    }
+    const candidateId = candidate.user;
+    if(!candidateId) {
+      throw new NotFoundException('Candidate id not found for the given application');
+    }
+    // console.log('Candidate ID:', candidateId); // Log the candidateId for debugging
+    const user = await this.userModel.findById(candidateId);
+    // console.log('User:', user); // Log the user object for debugging
+    if(!user) {
+      throw new NotFoundException('User not found for the given application');
+    }
+    return user;
   }
 
   private async getCVURL(key: string){
@@ -95,53 +111,88 @@ export class ApplicationSumService {
   public async getApplicationSum(hr: UserDocument, applicationId:string): Promise<ApplicationSumResponseDto> {
     this.assertHrUser(hr);
     const user = await this.getUser(applicationId);
-    const application = await this.jobApplicationModel.findOne(new Types.ObjectId(applicationId));
+    if(!user) throw new NotFoundException('User not found for the given application');
+    const application = await this.jobApplicationModel.findById(new Types.ObjectId(applicationId));
 
     //CV section
-    const CVUrl = await this.getCVURL(user.cvUrl);
+    // console.log('User CV URL:', user.cvUrl); // Log the user's cvUrl for debugging
+    const CVUrl = await this.getCVURL(user._id.toString());
+    if (!CVUrl) {
+      throw new NotFoundException('CV not found');
+    }
 
     //Profile section
-    const candidate = await this.candidateModel.findOne(user._id);
+    const candidate = await this.candidateModel.findById(application.candidateId);
+    // console.log('Candidate:', candidate); // Log the candidate object for debugging
     let pfpURL;
     if(user.profilePictureStatus == PictureCVStatus.APPROVED)
-        pfpURL = await this.getPFPURL(user.profilePictureUrl);
+        pfpURL = await this.getPFPURL(user._id.toString());
     else
         pfpURL = null;
 
-    //video section
-    // video analysis video url , appID -> candidateInterview -> interviewResponse -> questionID, order, videoUrl
-    const videosResponses = await this.videoAiAnalysisModel.findOne({applicationId:new Types.ObjectId(applicationId)});
-    const candidateInterview = await this.candidateInterviewModel.findOne({applicationId:new Types.ObjectId(applicationId)});
-    const interviewData : VideoAnalysisSectionDto[] = [];
+    // Video section
+    const interviewData: VideoAnalysisSectionDto[] = [];
     let overallScore = 0;
-    for (const response of videosResponses.videos) {
-        const interviewResponse = await this.interviewResponseModel.findOne({
-            candidateInterviewId: candidateInterview._id,
-            response: response.videoS3Key,
+
+    const videosResponses = await this.videoAiAnalysisModel.findOne({
+        applicationId: new Types.ObjectId(applicationId),
+    });
+
+    if (videosResponses) {
+        const candidateInterview = await this.candidateInterviewModel.findOne({
+            applicationId: new Types.ObjectId(applicationId),
         });
 
-        const question = await this.interviewQuestionModel.findById(
-            interviewResponse.questionId,
-        );
+        if (candidateInterview) {
+            for (const response of videosResponses.videos) {
+                const interviewResponse = await this.interviewResponseModel.findOne({
+                    candidateInterviewId: candidateInterview._id,
+                    response: response.videoS3Key,
+                });
 
-        const videoURL = await this.uploadService.getVideoUrlByKey(response.videoS3Key);
-        overallScore += response.overall_interview_score;
-        interviewData.push({
-            order: interviewResponse.responseOrder,
-            question: question?.question,
-            videoURL: videoURL,
-            transcription: response.transcription,
-            bodyLanguage: response.body_language.scores.overall_body_score,
-            confidence: response.body_language.scores.confidence_score,
-            englishLevel: response.audio.english_level,
-            communication: response.audio.audio_score,
-        });
+                if (!interviewResponse) continue;
+
+                const question = await this.interviewQuestionModel.findById(
+                    interviewResponse.questionId,
+                );
+
+                const videoURL = await this.uploadService.getVideoUrlByKey(
+                    response.videoS3Key,
+                );
+
+                overallScore += response.overall_interview_score;
+
+                interviewData.push({
+                    order: interviewResponse.responseOrder,
+                    question: question?.question ?? '',
+                    videoURL,
+                    transcription: response.transcription ?? '',
+                    bodyLanguage:
+                        response.body_language?.scores?.overall_body_score ?? 0,
+                    confidence:
+                        response.body_language?.scores?.confidence_score ?? 0,
+                    englishLevel: response.audio?.english_level ?? 'no level',
+                    communication: response.audio?.audio_score ?? 0,
+                });
+            }
+        }
     }
-
     
     //Arch alignment section
-    const jobScore = await this.userJobScoreModel.findOne({jobId:application.jobId,candidateId:candidate._id});
-    const aggScore = ((overallScore+jobScore.score)/((interviewData.length+1)*100))*100 //sum interview scores + cv score all over number of videos + cv *100 into percent
+    const jobScore = await this.userJobScoreModel.findOne({
+        jobId: application.jobId,
+        candidateId: candidate._id,
+    });
+    // if(!jobScore) {
+    //     throw new NotFoundException('Job score not found for the given application');
+    // }
+
+    const cvScore = jobScore?.score ?? 0;
+
+    const aggScore =
+      interviewData.length > 0
+          ? ((overallScore + cvScore) / ((interviewData.length + 1) * 100)) * 100
+          : 0;
     // feedback
 
     // recruiter Notes
@@ -163,7 +214,7 @@ export class ApplicationSumService {
         ArchitecturalAlignmentSection:{
             score:aggScore,
             summary:'',
-            matchingSkills:jobScore.matchedSkills
+            matchingSkills:jobScore?.matchedSkills || [],
         },
         CVSection:{
             CVUrl:CVUrl
@@ -176,7 +227,7 @@ export class ApplicationSumService {
   }
   public async addNotes(hr: UserDocument, applicationId:string, notes:RecruiterNotesSectionDto): Promise<RecruiterNotesSectionDto> {
     this.assertHrUser(hr);
-    const recruiterNotes = notes.notes;
+    const recruiterNotes = notes.notes ?? [];
     for(const note of recruiterNotes){
         await this.recruiterNoteModel.create(
         {

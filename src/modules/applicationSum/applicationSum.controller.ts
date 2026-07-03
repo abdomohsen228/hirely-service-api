@@ -59,14 +59,14 @@ export class ApplicationSumController {
   @ApiParam({ name: 'applicationId', description: 'ID of the application' })
   @ApiResponse({
     status: 201,
-    description: 'New note created successfuly',
-    type: ApplicationSumResponseDto,
+    description: 'New note created successfuly'
   })
   public async addNotes(
     @CurrentUser() userPayload: UserDocument,
     @Param('applicationId') applicationId: string,
     @Body() notes: RecruiterNotesSectionDto
   ): Promise<RecruiterNotesSectionDto> {
+    console.log('Adding notes for applicationId:', applicationId, 'with notes:', notes);
     return this.applicationSumService.addNotes(userPayload, applicationId, notes);
   }
 
