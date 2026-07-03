@@ -151,6 +151,24 @@ export class JobService {
     return hrs.map((hr) => hr._id);
   }
 
+  private async getCandidateJobScores(
+    candidateId: Types.ObjectId,
+    jobIds: Types.ObjectId[],
+  ): Promise<Map<string, number>> {
+    if (jobIds.length === 0) {
+      return new Map();
+    }
+
+    const scores = await this.userJobScoreModel
+      .find({ candidateId, jobId: { $in: jobIds } })
+      .select('jobId score')
+      .exec();
+
+    return new Map(
+      scores.map((score) => [score.jobId.toString(), score.score]),
+    );
+  }
+
   private async getCandidateForUser(
     user: UserDocument,
   ): Promise<CandidateDocument> {
@@ -407,18 +425,28 @@ export class JobService {
 
     // Fetch all applications for this candidate in one query
     let appliedJobIds = new Set<string>();
+    let matchScoresByJobId = new Map<string, number>();
     if (candidateId) {
       const jobIds = docs.map((d) => d._id);
-      const applications = await this.jobApplicationModel
-        .find({ jobId: { $in: jobIds }, candidateId })
-        .select('jobId')
-        .exec();
+      const [applications, matchScores] = await Promise.all([
+        this.jobApplicationModel
+          .find({ jobId: { $in: jobIds }, candidateId })
+          .select('jobId')
+          .exec(),
+        this.getCandidateJobScores(candidateId, jobIds),
+      ]);
       appliedJobIds = new Set(applications.map((a) => a.jobId.toString()));
+      matchScoresByJobId = matchScores;
     }
 
     return {
       items: docs.map((d) =>
-        this.toResponse(d, null, appliedJobIds.has(d._id.toString())),
+        this.toResponse(
+          d,
+          null,
+          appliedJobIds.has(d._id.toString()),
+          matchScoresByJobId.get(d._id.toString()),
+        ),
       ),
       total,
       page,
@@ -515,14 +543,22 @@ export class JobService {
     let filter: Record<string, unknown> = { _id: jobId };
 
     let isCandidateApply = false;
+    let matchScore: number | undefined;
     if (user.role === UserRole.HR) {
       filter = { ...filter, createdBy: user._id };
     } else if (user.role === UserRole.CANDIDATE) {
       const candidate = await this.getCandidateForUser(user);
-      const application = await this.jobApplicationModel
-        .findOne({ jobId, candidateId: candidate._id })
-        .exec();
+      const [application, userJobScore] = await Promise.all([
+        this.jobApplicationModel
+          .findOne({ jobId, candidateId: candidate._id })
+          .exec(),
+        this.userJobScoreModel
+          .findOne({ jobId, candidateId: candidate._id })
+          .select('score')
+          .exec(),
+      ]);
       isCandidateApply = Boolean(application);
+      matchScore = userJobScore?.score;
       filter = { ...filter, status: JobStatus.OPEN };
     } else {
       throw new ForbiddenException('Only HR and candidates can access jobs');
@@ -535,7 +571,7 @@ export class JobService {
     const hrProfile = doc.hr
       ? await this.hrModel.findById(doc.hr).exec()
       : null;
-    return this.toResponse(doc, hrProfile, isCandidateApply);
+    return this.toResponse(doc, hrProfile, isCandidateApply, matchScore);
   }
 
   public async applyToJob(
