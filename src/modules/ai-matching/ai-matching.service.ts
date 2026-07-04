@@ -184,9 +184,9 @@ export class AiMatchingService {
         `[${context.trigger}] Saved UserJobScore | candidateId=${candidateId.toString()} | jobId=${recommendation.job_id} | score=${recommendation.match_score}`,
       );
 
-      // Send email if score > 0.7 and trigger is from job creation
+      // Send email if score > 0.9 and trigger is from job creation
       if (
-        recommendation.match_score > 0.7 &&
+        recommendation.match_score > 0.9 &&
         context.trigger === 'create_job'
       ) {
         await this.sendMatchingEmailIfScoreHigh(
@@ -403,9 +403,79 @@ export class AiMatchingService {
       this.logger.log(
         `[video_analysis] Successfully processed ${analysisResponse.videos.length} videos for candidate ${candidateId} (${userId}). Overall score: ${analysisResponse.overall_interview_score}`,
       );
+
+      // Send interview feedback email to candidate
+      await this.sendInterviewFeedbackEmail(
+        candidate._id,
+        applicationIds[0],
+        analysisResponse.overall_interview_score,
+        analysisResponse.conclusion,
+        JSON.stringify(analysisResponse.feedback, null, 2),
+      );
     } catch (error) {
       this.logger.error(
         `[video_analysis] Failed to process videos for candidate ${candidateId}: ${error}`,
+      );
+    }
+  }
+
+  private async sendInterviewFeedbackEmail(
+    candidateId: Types.ObjectId,
+    applicationId: Types.ObjectId,
+    overallScore: number,
+    conclusion: string,
+    feedback: string,
+  ): Promise<void> {
+    try {
+      const candidate = await this.candidateModel.findById(candidateId);
+      if (!candidate || !candidate.user) {
+        this.logger.warn(
+          `[interview_feedback] Candidate ${candidateId} not found or has no user. Skipping email.`,
+        );
+        return;
+      }
+
+      const user = await this.userModel.findById(candidate.user).exec();
+      if (!user || !user.email) {
+        this.logger.warn(
+          `[interview_feedback] User ${candidate.user} not found or has no email. Skipping email.`,
+        );
+        return;
+      }
+
+      const application = await this.jobApplicationModel
+        .findById(applicationId)
+        .exec();
+      if (!application) {
+        this.logger.warn(
+          `[interview_feedback] Application ${applicationId} not found. Skipping email.`,
+        );
+        return;
+      }
+
+      const job = await this.jobModel.findById(application.jobId).exec();
+      if (!job) {
+        this.logger.warn(
+          `[interview_feedback] Job ${application.jobId} not found. Skipping email.`,
+        );
+        return;
+      }
+
+      await this.emailService.sendInterviewFeedbackEmail(
+        candidate.fullName,
+        user.email,
+        job.title,
+        overallScore,
+        conclusion,
+        feedback,
+      );
+
+      this.logger.log(
+        `[interview_feedback] Sent interview feedback email to ${user.email} for job ${job.title} with score ${overallScore}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `[interview_feedback] Failed to send interview feedback email for candidate ${candidateId} and application ${applicationId}: ${error}`,
       );
     }
   }
