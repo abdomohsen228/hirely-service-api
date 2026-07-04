@@ -109,6 +109,7 @@ export class AiMatchingService {
    * Triggers matching for a new job against all candidates with a CV.
    */
   async computeScoresForJob(job: JobDocument): Promise<void> {
+  
     const candidates = await this.candidateModel
       .find({ user: { $exists: true, $ne: null } })
       .exec();

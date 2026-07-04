@@ -162,11 +162,12 @@ export class JobService {
     }
 
     const scores = await this.userJobScoreModel
-      .find({ candidateId, jobId: { $in: jobIds } })
+      .find({ candidateId: candidateId, jobId: { $in: jobIds } })
       .select('jobId score')
       .exec();
 
-    return new Map(
+      console.log('scores', scores);
+    return new Map(  // [jobid,score]
       scores.map((score) => [score.jobId.toString(), score.score]),
     );
   }
@@ -434,7 +435,7 @@ export class JobService {
 
     if (candidateId && query.applied !== undefined) {
       const applications = await this.jobApplicationModel
-        .find({ candidateId })
+        .find({ candidateId: candidateId })
         .select('jobId')
         .exec();
       const appliedIds = applications.map((application) => application.jobId);
@@ -469,17 +470,17 @@ export class JobService {
       
       const [applications] = await Promise.all([
         this.jobApplicationModel
-          .find({ jobId: { $in: jobIds }, candidateId })
+          .find({ jobId: { $in: jobIds }, candidateId: candidateId })
           .select('jobId')
           .exec(),
       ]);
       appliedJobIds = new Set(applications.map((a) => a.jobId.toString()));
     }
     const items = await Promise.all(
-  docs.map((d) =>
+  docs.map(async (d) =>
     this.toResponse(
       d,
-      null,
+      d.hr ? await this.hrModel.findById(d.hr).exec() : null,
       appliedJobIds.has(d._id.toString()),
       matchScoresByJobId.get(d._id.toString()),
     ),

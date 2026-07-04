@@ -59,10 +59,10 @@ export class AuthController {
   }
 
   @Post('/signup')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register new user' })
   @ApiResponse({
-    status: HttpStatus.OK,
+    status: HttpStatus.CREATED,
     description: 'User successfully registered',
     type: UserDataDto,
   })
