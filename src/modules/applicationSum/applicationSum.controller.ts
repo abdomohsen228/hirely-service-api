@@ -28,7 +28,8 @@ import { ApplicationSumService } from './applicationSum.service';
 import { ApplicationSumResponseDto } from './dto/response/ApplicationSumResponse.dto';
 import { RecruiterNotesSectionDto } from './dto/response/RecruiterNotesSection.dto';
 import { ApplicationStatus } from 'src/database/enums/applicationStatus.enum';
-
+import { EditNoteRequestDto } from './dto/request/EditNote.dto';
+import { UpdateApplicationRequestDto } from './dto/request/UpdateApplicationRequest.dto';
 @ApiTags('ApplicationsSum')
 @ApiBearerAuth('access-token')
 @UseGuards(AuthGuard)
@@ -70,10 +71,10 @@ export class ApplicationSumController {
     return this.applicationSumService.addNotes(userPayload, applicationId, notes);
   }
 
-  @Delete('/notes/:id')
+  @Delete('/notes/:noteId')
   @ApiOperation({ summary: 'Delete Note' })
   @ApiParam({ name: 'applicationId', description: 'ID of the application' })
-  @ApiParam({ name: 'NoteId', description: 'ID of the note' })
+  @ApiParam({ name: 'noteId', description: 'ID of the note' })
   @ApiResponse({
     status: 204,
     description: 'No content',
@@ -86,10 +87,10 @@ export class ApplicationSumController {
     return this.applicationSumService.deleteNote(userPayload, applicationId, noteId);
   }
 
-  @Put('/notes/:id')
+  @Put('/notes/:noteId')
   @ApiOperation({ summary: 'update Note' })
   @ApiParam({ name: 'applicationId', description: 'ID of the application' })
-  @ApiParam({ name: 'NoteId', description: 'ID of the note' })
+  @ApiParam({ name: 'noteId', description: 'ID of the note' })
   @ApiResponse({
     status: 200,
     description: 'Note updated successfuly',
@@ -98,9 +99,9 @@ export class ApplicationSumController {
     @CurrentUser() userPayload: UserDocument,
     @Param('applicationId') applicationId: string,
     @Param('noteId') noteId: string,
-    @Body() noteBody:string
+    @Body() noteBody:EditNoteRequestDto
   ){
-    return this.applicationSumService.updateNote(userPayload, applicationId, noteId, noteBody);
+    return this.applicationSumService.updateNote(userPayload, applicationId, noteId, noteBody.content);
   }
 
 
@@ -115,9 +116,9 @@ export class ApplicationSumController {
   public async updateStatus(
     @CurrentUser() userPayload: UserDocument,
     @Param('applicationId') applicationId: string,
-    @Body() applicationStatus:ApplicationStatus
+    @Body() applicationStatus:UpdateApplicationRequestDto
   ){
-    return this.applicationSumService.updateStatus(userPayload, applicationId,applicationStatus);
+    return this.applicationSumService.updateStatus(userPayload, applicationId,applicationStatus.status);
   }
   
 }

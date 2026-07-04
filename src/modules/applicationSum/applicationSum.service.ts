@@ -255,7 +255,9 @@ export class ApplicationSumService {
     const application = await this.jobApplicationModel.findById(new Types.ObjectId(applicationId))
     if(!application)
         throw new BadRequestException('Application Not Found!')
+    console.log('Deleting note with ID:', noteId); // Log the noteId for debugging
     const note = await this.recruiterNoteModel.findById(new Types.ObjectId(noteId));
+    console.log('Note to delete:', note); // Log the note object for debugging
     if(!note)
         throw new BadRequestException('Note Not Found!')
     await this.recruiterNoteModel.deleteOne({_id:new Types.ObjectId(noteId)})
