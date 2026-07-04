@@ -546,8 +546,11 @@ export class JobService {
 
     const items: RecommendedJobItemResponseDto[] = [];
     for (const item of paginatedItems) {
+      const hrProfile = item.job.hr
+        ? await this.hrModel.findById(item.job.hr).exec()
+        : null;
       items.push({
-        job: await this.toResponse(item.job, null, undefined, item.score),
+        job: await this.toResponse(item.job, hrProfile, undefined, item.score),
         score: item.score,
         matchedSkills: item.matchedSkills,
       });
