@@ -25,6 +25,7 @@ import { ListMyApplicationsQueryDto } from '../job/dtos/request/listMyApplicatio
 import { JobApplicationResponseDto } from '../job/dtos/response/jobApplicationResponse.dto';
 import { JobPostResponseDto } from '../job/dtos/response/jobPostResponse.dto';
 import { JobStatus } from 'src/database/enums/jobStatus.enum';
+import { UploadService } from 'src/upload/upload.service';
 
 @Injectable()
 export class ApplicationsService {
@@ -37,6 +38,7 @@ export class ApplicationsService {
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    private readonly uploadService: UploadService,
   ) {}
 
   private assertHrUser(user: UserDocument): void {
@@ -182,13 +184,19 @@ export class ApplicationsService {
     const jobs = await this.jobModel
       .find({ _id: { $in: uniqueJobIds } })
       .exec();
-    const jobsById = new Map(jobs.map((job) => [job._id.toString(), job]));
 
+    const jobsById = new Map(jobs.map((job) => [job._id.toString(), job]));
+    const cvUrls = await Promise.all(
+      applications.map((application) =>
+        this.uploadService.getCvUrlByKey(application.resumeUrl),
+      ),
+    );
     const items: MyJobApplicationItemResponseDto[] = applications.map(
       (application) => {
         const matchedJob = jobsById.get(application.jobId.toString());
+        const cv = cvUrls[applications.indexOf(application)];
         return {
-          application: this.toApplicationResponse(application),
+          application: this.toApplicationResponse(application, cv),
           job: matchedJob ? this.toResponse(matchedJob) : null,
             // id: doc._id.toString(),
             // title: doc.title,
@@ -244,8 +252,9 @@ export class ApplicationsService {
     }
 
     const job = await this.jobModel.findById(application.jobId).exec();
+    const cv = await this.uploadService.getCvUrlByKey(application.resumeUrl);
     return {
-      application: this.toApplicationResponse(application),
+      application: this.toApplicationResponse(application,cv),
       job: job ? this.toResponse(job) : null,
     };
   }
@@ -301,6 +310,7 @@ export class ApplicationsService {
 
   private toApplicationResponse(
     doc: JobApplicationDocument,
+    cv: string
   ): JobApplicationResponseDto {
     const totalStages = doc.totalStages ?? this.defaultApplicationTotalStages;
     const currentStage = doc.currentStage ?? 1;
@@ -309,7 +319,7 @@ export class ApplicationsService {
       id: doc._id.toString(),
       jobId: doc.jobId.toString(),
       candidateId: doc.candidateId.toString(),
-      resumeUrl: doc.resumeUrl,
+      resumeUrl: cv,
       status: doc.status,
       appliedAt: doc.appliedAt ?? doc.get('createdAt'),
       currentStage,

@@ -25,7 +25,7 @@ export class InterviewSumController {
     })
     public async getInterviewSummary(
     @CurrentUser() userPayload: UserDocument,
-    @Param() applicationId: string
+    @Param('applicationId') applicationId: string
     ): Promise<InterviewSumResponseDto> {
     return this.interviewSumService.getInterviewSum( userPayload, applicationId);
     }

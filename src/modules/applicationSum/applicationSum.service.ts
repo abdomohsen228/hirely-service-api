@@ -209,7 +209,8 @@ export class ApplicationSumService {
             YearsOfexperience:candidate.yearsOfExperience,
             location:candidate.country,
             status:application.status,
-            email:user.email
+            email:user.email,
+            title:candidate.currentJobTitle
         },
         ArchitecturalAlignmentSection:{
             score:aggScore,

@@ -21,11 +21,12 @@ import { ApplicationsService } from './applications.service';
 import { InterviewQuestion, InterviewQuestionSchema } from 'src/database/schemas/interview_questions.schema';
 import { ApplicationsController } from './applications.controller';
 import { ApplicationsScheduler } from './applications.scheduler';
-
+import { UploadModule } from 'src/upload/upload.module';
 @Module({
   imports: [
     AuthModule,
     AiMatchingModule,
+    UploadModule,
     MongooseModule.forFeature([
       { name: JobApplication.name, schema: JobApplicationSchema },
       { name: Candidate.name, schema: CandidateSchema },

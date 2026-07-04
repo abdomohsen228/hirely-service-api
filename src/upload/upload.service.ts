@@ -213,6 +213,10 @@ export class UploadService {
     return this.s3Service.getUrl({ key: user.cvUrl, bucket: this.bucket });
   }
 
+  public async getCvUrlByKey(key: string) {
+    return this.s3Service.getUrl({ key, bucket: this.bucket });
+  }
+
   async updateProfilePictureUrl(params: {
     userId: string;
     fileName: string;

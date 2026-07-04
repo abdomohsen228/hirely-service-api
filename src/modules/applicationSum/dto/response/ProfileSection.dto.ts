@@ -49,6 +49,12 @@ export class ProfileSectionDto {
   @MaxLength(200)
   email: string;
 
+  @ApiProperty({ example: 'Senior Backend Engineer' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  title: string;
+
 
   
 }

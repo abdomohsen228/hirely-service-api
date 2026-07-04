@@ -69,17 +69,21 @@ export class InterviewSumService {
     this.assertCandidateUser(user);
     // preperations
     const application = await this.jobApplicationModel.findById(new Types.ObjectId(applicationId));
+    if(!application) throw new NotFoundException('Application not found');
     if(!application.interviewed)
         throw new BadRequestException('Interview not completed yet for this application');
-    const interviewAnalysis = await this.videoAiAnalysisModel.findOne({ applicationId });
-    if(!interviewAnalysis)
+    const interviewAnalysis = await this.videoAiAnalysisModel.findOne({ applicationId: new Types.ObjectId(applicationId) });
+    console.log('interviewAnal');
+    if(!interviewAnalysis)  
         throw new BadRequestException('Interview not analysed yet for this application');
     const candidateInterview = await this.candidateInterviewModel.findOne({ applicationId: new Types.ObjectId(applicationId) });
+    console.log('canidateInterview');
     if(!candidateInterview)
         throw new BadRequestException('Candidate interview not found for this application');
     const interviewResponse = await this.interviewResponseModel.findOne({ candidateInterviewId: candidateInterview._id });
-    const interviewQuestions = await this.interviewQuestionModel.find({ jobId: new Types.ObjectId(application.jobId) });
-    const job = await this.jobModel.findById(new Types.ObjectId(application.jobId));
+        console.log('interviewRes');
+    const interviewQuestions = await this.interviewQuestionModel.find({ jobId: application.jobId});
+    const job = await this.jobModel.findById(application.jobId);
 
     // headers section
     const heaeders = {
