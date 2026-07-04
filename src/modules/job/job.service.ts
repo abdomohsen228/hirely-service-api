@@ -456,15 +456,24 @@ export class JobService {
     let matchScoresByJobId = new Map<string, number>();
     if (candidateId) {
       const jobIds = docs.map((d) => d._id);
-      const [applications, matchScores] = await Promise.all([
+      
+      // Fetch match scores for ALL jobs in the system for this candidate
+      const allScores = await this.userJobScoreModel
+        .find({ candidateId })
+        .select('jobId score')
+        .exec();
+      
+      matchScoresByJobId = new Map(
+        allScores.map((score) => [score.jobId.toString(), score.score]),
+      );
+      
+      const [applications] = await Promise.all([
         this.jobApplicationModel
           .find({ jobId: { $in: jobIds }, candidateId })
           .select('jobId')
           .exec(),
-        this.getCandidateJobScores(candidateId, jobIds),
       ]);
       appliedJobIds = new Set(applications.map((a) => a.jobId.toString()));
-      matchScoresByJobId = matchScores;
     }
     const items = await Promise.all(
   docs.map((d) =>
@@ -866,7 +875,7 @@ export class JobService {
       sprintDuration: doc.sprintDuration,
       applicationCount: doc.applicationCount,
       workplaceType: doc.workplaceType,
-      matchScore: matchScore ?? doc.matchScore ?? null,
+      matchScore: matchScore ?? null,
       createdAt: doc.get('createdAt'),
       updatedAt: doc.get('updatedAt'),
     };
