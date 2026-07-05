@@ -101,8 +101,10 @@ export class JobController {
     status: HttpStatus.OK,
     type: [JobPostResponseDto],
   })
-  public async getRecentJobs(): Promise<JobPostResponseDto[]> {
-    return this.jobService.getRecentJobs();
+  public async getRecentJobs(
+    @CurrentUser() userPayload: UserDocument,
+  ): Promise<JobPostResponseDto[]> {
+    return this.jobService.getRecentJobs(userPayload);
   }
 
   @Get(':id')

@@ -575,14 +575,16 @@ export class JobService {
     };
   }
 
-  public async getRecentJobs(): Promise<JobPostResponseDto[]> {
+  public async getRecentJobs(user: UserDocument): Promise<JobPostResponseDto[]> {
     const jobs = await this.jobModel
       .find({ status: JobStatus.OPEN })
       .sort({ createdAt: -1 })
       .limit(5)
       .exec();
+    
+      const candidate = user.role === UserRole.CANDIDATE ? await this.getCandidateForUser(user) : null;
 
-    return Promise.all(jobs.map((job) => this.toResponse(job)));
+    return Promise.all(jobs.map((job) => this.toResponse(job, null, null, null, candidate)));
   }
 
   public async getJobPostById(
@@ -844,12 +846,34 @@ export class JobService {
     hrProfile?: HrDocument | null,
     isCandidateApply?: boolean,
     matchScore?: number,
+    candidate?: CandidateDocument,
   ): Promise<JobPostResponseDto> {
     let questions: string[] = [];
     if (doc.interviewerQuestions && doc.interviewerQuestions.length > 0) {
       const user = await this.userModel.findById(doc.createdBy).exec();
       questions = await this.getInterviewerQuestions(user, (doc._id).toString());
-      
+    }
+    // console.log('candidate', candidate);
+    const userJobScore = await this.userJobScoreModel
+      .findOne({
+        jobId: doc._id,
+        candidateId: candidate?._id,
+      })
+      // .select('score matchedSkills')
+      .exec();
+    console.log('userJobScore', userJobScore);
+    let score = null;
+    let numOfMatchedSkills = 0;
+    if (userJobScore) {
+      score = userJobScore.score;
+      numOfMatchedSkills = userJobScore.matchedSkills.length;
+    }
+    if(matchScore === undefined && score !== null) {
+      matchScore = score;
+    }
+    const hrProfileToUse = hrProfile ?? (doc.hr ? await this.hrModel.findById(doc.hr).exec() : null);
+    if ( hrProfileToUse && !hrProfile) {
+      hrProfile = hrProfileToUse;
     }
     return {
       id: doc._id.toString(),
@@ -879,6 +903,7 @@ export class JobService {
       matchScore: matchScore ?? null,
       createdAt: doc.get('createdAt'),
       updatedAt: doc.get('updatedAt'),
+      matchedSkillsCount: numOfMatchedSkills || 0,
     };
   }
 

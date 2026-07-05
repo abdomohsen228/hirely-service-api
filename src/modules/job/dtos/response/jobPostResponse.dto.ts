@@ -84,6 +84,9 @@ export class JobPostResponseDto {
   @ApiProperty()
   sprintDuration: number;
 
+  @ApiProperty()
+  matchedSkillsCount?: number;
+
   @ApiPropertyOptional({
     description: 'AI matching score for the current candidate (0-100)',
     nullable: true,
