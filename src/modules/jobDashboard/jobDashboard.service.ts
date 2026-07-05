@@ -239,6 +239,7 @@ export class JobDashboardService {
       // application.interviewed = true;
       application.currentStage = 3;
       application.nextStepAt = job.interviewEndDate;
+      application.nextStepTitle = "Start Interview";
       const candidateInterview  = await this.canidateInterviewModel.findOne({applicationId:application._id});
       if(candidateInterview){
         candidateInterview.status = CandidateInterviewStatus.INVITED;
