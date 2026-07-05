@@ -51,6 +51,7 @@ import {
 } from 'src/database/schemas/interview_questions.schema';
 type JobFilter = Record<string, unknown>;
 import { WorkplaceTypeFilter } from 'src/database/enums/workplaceType.enum';
+import { InterviewSprintDocument, InterviewSprint } from 'src/database/schemas/interview_sprint.schema';
 
 @Injectable()
 export class JobService {
@@ -69,6 +70,8 @@ export class JobService {
     private readonly userJobScoreModel: Model<UserJobScoreDocument>,
     @InjectModel(InterviewQuestion.name)
     private readonly interviewQuestionModel: Model<InterviewQuestionDocument>,
+    @InjectModel(InterviewSprint.name)
+    private readonly interviewSprintModel: Model<InterviewSprintDocument>,
     private readonly aiMatchingService: AiMatchingService,
   ) {}
 
@@ -441,6 +444,7 @@ export class JobService {
       const appliedIds = applications.map((application) => application.jobId);
       filter._id = query.applied ? { $in: appliedIds } : { $nin: appliedIds };
     }
+    filter.status = JobStatus.OPEN;
 
     const [docs, total] = await Promise.all([
       this.jobModel
@@ -957,6 +961,12 @@ export class JobService {
 
   public async openInterviewPhase(): Promise<void> {
     const now = new Date();
+    const startedJobs = await this.jobModel.find(
+      {
+        interviewStatus: false,
+        interviewStartDate: { $lte: now }
+      }
+    )
     await this.jobModel
       .updateMany(
         {
@@ -966,6 +976,19 @@ export class JobService {
         { interviewStatus: true },
       )
       .exec();
+    for(const job of startedJobs)
+    {
+      const sprint = await this.interviewSprintModel.findOne({jobId:job._id})
+      if(!sprint){
+        await this.interviewSprintModel.create({
+          title:job.title,
+          jobId:job._id,
+          start_date:job.interviewStartDate,
+          createdBy:job.hr,
+          end_date:job.interviewEndDate
+        })
+      }
+    }
   }
 
   public async closeInterviewPhase(): Promise<void> {

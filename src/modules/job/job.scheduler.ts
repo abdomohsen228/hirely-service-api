@@ -9,17 +9,17 @@ export class JobScheduler {
     private readonly jobService: JobService,
   ) {}
 
-  @Cron('0 0 * * *')
+  @Cron('* * * * *')
   async closeExpiredJobs() {
     await this.jobService.closeExpiredJobs();
   }
 
-  @Cron('0 0 * * *')
+  @Cron('* * * * *')
   async openInterviewPhase() {
     await this.jobService.openInterviewPhase();
   }
 
-  @Cron('0 0 * * *')
+  @Cron('* * * * *')
   async closeInterviewPhase() {
     await this.jobService.closeInterviewPhase();
   }

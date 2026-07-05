@@ -21,6 +21,7 @@ import { JobController } from './job.controller';
 import { JobService } from './job.service';
 import { InterviewQuestion, InterviewQuestionSchema } from 'src/database/schemas/interview_questions.schema';
 import { JobScheduler } from './job.scheduler';
+import { InterviewSprintSchema, InterviewSprint } from 'src/database/schemas/interview_sprint.schema';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { JobScheduler } from './job.scheduler';
       { name: User.name, schema: UserSchema },
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: InterviewQuestion.name, schema: InterviewQuestionSchema },
+      { name: InterviewSprint.name, schema: InterviewSprintSchema },
     ]),
   ],
   controllers: [JobController],
