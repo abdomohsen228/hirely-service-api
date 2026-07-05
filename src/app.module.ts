@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
 import { JobModule } from './modules/job/job.module';
 import { UploadModule } from './upload/upload.module';
@@ -20,6 +21,7 @@ import { ApplicationSumModule } from './modules/applicationSum/applicationSum.mo
 import { InterviewSumModule } from './modules/interviewSum/interviewSum.module';
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: process.env.NODE_ENV !== 'production' ? '.env' : undefined,
