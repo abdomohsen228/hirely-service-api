@@ -10,7 +10,7 @@ export class InterviewSprint extends Document {
   @Prop({ required: true })
   jobId: Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   templateId: Types.ObjectId; // Reference to the InterviewTemplate
 
   @Prop({ required: true })
@@ -22,3 +22,5 @@ export class InterviewSprint extends Document {
   @Prop({ required: true })
   createdBy: Types.ObjectId; // HR's ID
 }
+
+export const InterviewSprintSchema = SchemaFactory.createForClass(InterviewSprint);

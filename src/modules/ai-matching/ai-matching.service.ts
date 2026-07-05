@@ -28,6 +28,7 @@ import { UploadService } from 'src/upload/upload.service';
 import { InterviewsService } from '../interviews/interviews.service';
 import { EmailService } from '../email/email.service';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
+import { InterviewResponse, InterviewResponseDocument } from 'src/database/schemas/interview_responses.schema';
 
 @Injectable()
 export class AiMatchingService {
@@ -47,6 +48,8 @@ export class AiMatchingService {
     private readonly videoAiAnalysisModel: Model<VideoAiAnalysisDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+    @InjectModel(InterviewResponse.name)
+    private readonly interviewResponseModel: Model<InterviewResponseDocument>,
     private readonly uploadService: UploadService,
     private readonly interviewService: InterviewsService,
     private readonly emailService: EmailService,
@@ -392,6 +395,15 @@ export class AiMatchingService {
         feedback: analysisResponse.feedback,
         feedbackError: analysisResponse.feedback_error,
       });
+
+      for(const res of analysisResponse.videos){
+        await this.interviewResponseModel.updateOne(
+          {response:res.videoS3Key},
+          {
+            transcription: res.transcription
+          }
+        ).exec();
+      }
 
       // Mark all involved applications as processed
       for (const appId of applicationIds) {

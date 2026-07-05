@@ -187,6 +187,7 @@ export class JobDashboardService {
         },
       });
     }
+    // const job = await this.jobModel.findById(new Types.ObjectId(jobId)).exec();
     return {
       jobId: String(jobId),
       totalApplications: totalApplications,
@@ -199,6 +200,7 @@ export class JobDashboardService {
         limit,
         total: totalFilteredApplications,
       },
+      // state
     };
   }
 

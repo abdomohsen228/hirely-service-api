@@ -22,6 +22,8 @@ import { InterviewQuestion, InterviewQuestionSchema } from 'src/database/schemas
 import { ApplicationsController } from './applications.controller';
 import { ApplicationsScheduler } from './applications.scheduler';
 import { UploadModule } from 'src/upload/upload.module';
+import { CandidateInterviewSchema, CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
+import { InterviewSprint, InterviewSprintSchema } from 'src/database/schemas/interview_sprint.schema';
 @Module({
   imports: [
     AuthModule,
@@ -35,6 +37,9 @@ import { UploadModule } from 'src/upload/upload.module';
       { name: User.name, schema: UserSchema },
       { name: UserJobScore.name, schema: UserJobScoreSchema },
       { name: InterviewQuestion.name, schema: InterviewQuestionSchema },
+      { name: CandidateInterview.name, schema: CandidateInterviewSchema },
+      { name: InterviewSprint.name, schema: InterviewSprintSchema },
+
     ]),
   ],
   controllers: [ApplicationsController],

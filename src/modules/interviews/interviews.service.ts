@@ -41,6 +41,7 @@ import { InterviewAnswerResponseDto } from './dtos/response/interviewAnswerRespo
 import { InterviewSessionResponseDto } from './dtos/response/interviewSessionResponse.dto';
 import { InterviewUploadUrlResponseDto } from './dtos/response/interviewUploadUrlResponse.dto';
 import { InterviewInstructionsResponseDto } from './dtos/response/interviewInstructionsResponse.dto';
+import { VideoAiAnalysisDocument, VideoAiAnalysis } from 'src/database/schemas/video_ai_analysis.schema';
 type InterviewContext = {
   candidate: CandidateDocument;
   application: JobApplicationDocument;
@@ -64,6 +65,8 @@ export class InterviewsService {
     private readonly candidateInterviewModel: Model<CandidateInterviewDocument>,
     @InjectModel(InterviewResponse.name)
     private readonly interviewResponseModel: Model<InterviewResponseDocument>,
+    @InjectModel(VideoAiAnalysis.name)
+    private readonly VideoAiAnalysisModel: Model<VideoAiAnalysisDocument>,
     private readonly s3Service: S3Service,
   ) {}
 
@@ -353,6 +356,10 @@ export class InterviewsService {
       interview.started_at = new Date();
       await interview.save();
     }
+    await this.jobApplicationModel.updateOne(
+      {_id:new Types.ObjectId(applicationId)},
+      {interviewed:true}
+    ).exec();
 
     return this.toSessionResponse(context, interview);
   }
@@ -472,7 +479,10 @@ export class InterviewsService {
 
     interview.status = CandidateInterviewStatus.SUBMITTED;
     interview.submitted_at = new Date();
-    application.interviewed = true;
+    application.status = ApplicationStatus.PENDING;
+    application.currentStage = 4;
+    application.nextStepAt = job.interviewEndDate;
+    application.nextStepTitle = "AI evaluation";
     await Promise.all([interview.save(), application.save()]);
 
     return this.toSessionResponse({ ...context, application }, interview);
@@ -493,4 +503,32 @@ export class InterviewsService {
   }
   return this.getInterviewResponses(candidateInterview._id);
   }
+
+  public async updateEvaluatedApplications(): Promise<void> {
+    const applications = await this.jobApplicationModel.find(
+      {videosProcessedByAi: true, status: ApplicationStatus.PENDING}
+    )
+    for(const app of applications){
+      const candidateInterview =  await this.candidateInterviewModel.findOne(
+        {applicationId: app._id}
+      ).exec();
+      // const job = await this.jobModel.findOne({_id:app.jobId}).exec();
+      if(candidateInterview.status != CandidateInterviewStatus.EVALUATED){
+        const videosAnalyzed = await this.VideoAiAnalysisModel.findOne({applicationId: app._id});
+        if(videosAnalyzed){
+          const interviewQuestions = await this.interviewQuestionModel.find(
+            {jobId: app.jobId}
+          );
+          if(interviewQuestions.length == videosAnalyzed.feedback.videos_analyzed)
+          {
+            candidateInterview.status = CandidateInterviewStatus.EVALUATED;
+            candidateInterview.save();
+            app.nextStepAt = null;
+            app.nextStepTitle = "Waiting For Final decision";
+          }
+        }
+      }
+    }
+  }
+
 }
