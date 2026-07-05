@@ -22,7 +22,7 @@ export class CandidateInterview extends Document {
   })
   status: CandidateInterviewStatus; // INVITED / STARTED / SUBMITTED / EVALUATED
 
-  @Prop({ required: true })
+  @Prop({ default: null })
   started_at: Date;
 
   @Prop({ default: null })
