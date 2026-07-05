@@ -9,6 +9,7 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
   private transporter: Transporter | null = null;
+  private readonly logoUrl = "https://hirely-s3-bucket.s3.eu-north-1.amazonaws.com/hirely-icon.png";
 
   constructor(
     private readonly configService: ConfigService,
@@ -101,7 +102,6 @@ export class EmailService {
     to: string,
     resetLink: string,
   ): Promise<void> {
-    const logoUrl = await this.uploadService.getLogoUrl();
 
     await this.sendMail({
       to,
@@ -109,7 +109,7 @@ export class EmailService {
       html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto;">
         <div style="text-align: center; padding: 20px 0;">
-          <img src="${logoUrl}" alt="Hirely Logo" style="max-width: 150px; height: auto;" />
+          <img src="${this.logoUrl}" alt="Hirely Logo" style="max-width: 150px; height: auto;" />
         </div>
         
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -164,7 +164,6 @@ export class EmailService {
     candidateEmail: string,
   ): Promise<void> {
     const jobLink = `${process.env.FRONTEND_URL}/jobs/${jobId}`;
-    const logoUrl = await this.uploadService.getLogoUrl();
 
     await this.sendMail({
       to: candidateEmail,
@@ -172,7 +171,7 @@ export class EmailService {
       html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto;">
         <div style="text-align: center; padding: 20px 0;">
-          <img src="${logoUrl}" alt="Hirely Logo" style="max-width: 150px; height: auto;" />
+          <img src="${this.logoUrl}" alt="Hirely Logo" style="max-width: 150px; height: auto;" />
         </div>
         
         <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -237,7 +236,6 @@ export class EmailService {
     conclusion: string,
     feedback: string,
   ): Promise<void> {
-    const logoUrl = await this.uploadService.getLogoUrl();
 
     await this.sendMail({
       to: candidateEmail,
@@ -245,7 +243,7 @@ export class EmailService {
       html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto;">
         <div style="text-align: center; padding: 20px 0;">
-          <img src="${logoUrl}" alt="Hirely Logo" style="max-width: 150px; height: auto;" />
+          <img src="${this.logoUrl}" alt="Hirely Logo" style="max-width: 150px; height: auto;" />
         </div>
         
         <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -293,7 +291,6 @@ export class EmailService {
     jobTitle: string,
     missingSkills: string[],
   ): Promise<void> {
-    const logoUrl = await this.uploadService.getLogoUrl();
 
     const missingSkillsHtml =
       missingSkills.length > 0
@@ -323,7 +320,7 @@ export class EmailService {
 
           <div style="text-align: center; padding: 20px 0;">
             <img
-              src="${logoUrl}"
+              src="${this.logoUrl}"
               alt="Hirely Logo"
               style="max-width:150px; height:auto;"
             />
@@ -430,7 +427,6 @@ export class EmailService {
     candidateEmail: string,
     jobTitle: string,
   ): Promise<void> {
-    const logoUrl = await this.uploadService.getLogoUrl();
 
     await this.sendMail({
       to: candidateEmail,
@@ -439,7 +435,7 @@ export class EmailService {
         <div style="font-family: Arial, sans-serif; line-height:1.6; max-width:600px; margin:0 auto;">
 
           <div style="text-align:center; padding:20px 0;">
-            <img src="${logoUrl}" alt="Hirely Logo"
+            <img src="${this.logoUrl}" alt="Hirely Logo"
                 style="max-width:150px; height:auto;" />
           </div>
 
@@ -510,7 +506,7 @@ export class EmailService {
     interviewEnd: Date,
   ): Promise<void> {
 
-    const logoUrl = await this.uploadService.getLogoUrl();
+    
 
     await this.sendMail({
       to: candidateEmail,
@@ -522,7 +518,7 @@ export class EmailService {
                     margin:0 auto;">
 
           <div style="text-align:center;padding:20px 0;">
-            <img src="${logoUrl}"
+            <img src="${this.logoUrl}"
                 style="max-width:150px;"
                 alt="Hirely Logo"/>
           </div>
