@@ -225,6 +225,7 @@ export class JobDashboardService {
     const candidate = await this.candidateModel.findById(application.candidateId).exec();
       if(!candidate)
         throw new NotFoundException('Candidate not found');
+    const user = await this.userModel.findById(candidate.user).exec();
     application.status = dto.applicationStatus;
     const job = await this.jobModel.findOne({_id:application.jobId}).exec();
     if (dto.applicationStatus === ApplicationStatus.ACCEPTED) {
@@ -232,7 +233,7 @@ export class JobDashboardService {
       application.currentStage = application.totalStages;
       application.nextStepAt = null;
       application.nextStepTitle = "Accepted";
-      await this.EmailService.sendApplicationAcceptedEmail(candidate.fullName,userPayload.email,job.title);
+      await this.EmailService.sendApplicationAcceptedEmail(candidate.fullName,user.email,job.title);
     }
     if (dto.applicationStatus === ApplicationStatus.INTERVIEW) {
       // application.interviewed = true;
@@ -256,7 +257,7 @@ export class JobDashboardService {
       }
       await this.EmailService.sendInterviewInvitationEmail(
         candidate.fullName,
-        userPayload.email,
+        user.email,
         job.title,
         job.interviewStartDate,
         job.interviewEndDate
@@ -266,7 +267,7 @@ export class JobDashboardService {
       if (application.status === ApplicationStatus.CV_FAILED) {
         const uniqueSkills = job.skills.filter((skill) => !candidate.skills.includes(skill));
         if(uniqueSkills.length > 0)
-          await this.EmailService.sendCvRejectionEmail(candidate.fullName, userPayload.email, job.title, uniqueSkills);
+          await this.EmailService.sendCvRejectionEmail(candidate.fullName, user.email, job.title, uniqueSkills);
         application.feedbackSummary = "Rejected due to CV not matching the job requirements";
       }
       // application.interviewed = true;
