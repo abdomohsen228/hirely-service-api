@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { User, UserDocument } from 'src/database/schemas/user.schema';
 import { UserRole } from 'src/database/enums/userRole.enum';
 import { InjectModel } from '@nestjs/mongoose';
@@ -25,7 +25,9 @@ import { Types } from 'mongoose';
 import { JobDocument } from 'src/database/schemas/jobs.schema';
 import { ApplicationStatus } from 'src/database/enums/applicationStatus.enum';
 import { VideoAiAnalysisDocument } from 'src/database/schemas/video_ai_analysis.schema';
-
+import { CandidateInterviewDocument,CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
+import { CandidateInterviewStatus } from 'src/database/enums/candidateInterviewStatus.enum';
+import { InterviewSprint, InterviewSprintDocument } from 'src/database/schemas/interview_sprint.schema';
 @Injectable()
 export class JobDashboardService {
   constructor(
@@ -37,6 +39,8 @@ export class JobDashboardService {
     @InjectModel('Job') private readonly jobModel: Model<JobDocument>,
     private readonly exportService: ExportService,
     @InjectModel('VideoAiAnalysis') private readonly videoAiAnalysisModel: Model<VideoAiAnalysisDocument>,
+    @InjectModel(CandidateInterview.name) private readonly canidateInterviewModel: Model<CandidateInterviewDocument>,
+    @InjectModel(InterviewSprint.name) private readonly interviewSprintModel: Model<InterviewSprintDocument>,
   ) {}
 
   private assertHrUser(user: UserDocument): void {
@@ -217,11 +221,42 @@ export class JobDashboardService {
       throw new ForbiddenException('Application not found');
     }
     application.status = dto.applicationStatus;
+    const job = await this.jobModel.findOne({_id:application.jobId}).exec();
     if (dto.applicationStatus === ApplicationStatus.ACCEPTED) {
       application.hiredAt = new Date();
+      application.currentStage = application.totalStages;
+      application.nextStepAt = null;
+      application.nextStepTitle = "Accepted";
     }
     if (dto.applicationStatus === ApplicationStatus.INTERVIEW) {
-      application.interviewed = true;
+      // application.interviewed = true;
+      application.currentStage = 3;
+      application.nextStepAt = job.interviewEndDate;
+      const candidateInterview  = await this.canidateInterviewModel.findOne({applicationId:application._id});
+      if(candidateInterview){
+        candidateInterview.status = CandidateInterviewStatus.INVITED;
+        candidateInterview.save();
+      }else{
+        const interviewSprint =  await this.interviewSprintModel.findOne({jobId:job._id}).exec();
+        if(!interviewSprint) throw new NotFoundException('Interview Sprint havent started yet!');
+        await this.canidateInterviewModel.create({
+          sprintId: interviewSprint._id,
+          applicationId: application._id,
+          jobId: job._id,
+          status: CandidateInterviewStatus.INVITED,
+          started_at: null,
+          submitted_at: null
+        })
+      }
+    }
+    if (dto.applicationStatus === ApplicationStatus.REJECTED) {
+      // application.interviewed = true;
+      application.currentStage = application.totalStages;
+      application.nextStepAt = null;
+      if (!application.feedbackSummary)
+        application.nextStepTitle = "Waiting FeedBack Summary";
+      else
+        application.nextStepTitle = "Finished";
     }
     await application.save();
     const candidateInfo = await this.getCandidateInfo(

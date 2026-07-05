@@ -13,11 +13,11 @@ export class ApplicationsScheduler {
   //   await this.applicationsService.updateApplicationStatuses();
   // }
 
-  @Cron('* * * * *')
-  async moveApplicationsTointerview() {
-    this.logger.log('Running scheduled task: moveApplicationsTointerview');
-    await this.applicationsService.moveApplicationsTointerview();
-  }
+  // @Cron('* * * * *')
+  // async moveApplicationsTointerview() {
+  //   this.logger.log('Running scheduled task: moveApplicationsTointerview');
+  //   await this.applicationsService.moveApplicationsTointerview();
+  // }
 
   // @Cron(`0 0 * * *`)
   // async rejectOverDueInterviews() {

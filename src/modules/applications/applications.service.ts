@@ -342,32 +342,34 @@ export class ApplicationsService {
     };
   }
 
-  // move applications from APPLIED to cv screening phase
-  // public async updateApplicationStatuses(): Promise<void> {
-  //   const updatedJobs = await this.jobModel
-  //     .find({
-  //       status: JobStatus.CLOSED,
-  //       interviewStartDate: { $gt: new Date() },
-  //     })
-  //     .exec();
-  //   for (const job of updatedJobs) {
-  //     await this.jobApplicationModel.updateMany(
-  //       { jobId: job._id, status: ApplicationStatus.APPLIED },
-  //       {
-  //         $set: {
-  //           status: ApplicationStatus.IN_REVIEW,
-  //           currentStage: 2,
-  //           progressPercent: this.computeProgressPercent(
-  //             2,
-  //             this.defaultApplicationTotalStages,
-  //           ),
-  //           nextStepTitle: 'CV filtering',
-  //         },
-  //       },
-  //     );
-  //   }
-  // }
+  // move applications from APPLIED to In review
+  public async updateApplicationStatuses(): Promise<void> {
+    const updatedJobs = await this.jobModel
+      .find({
+        status: JobStatus.CLOSED,
+        interviewStartDate: { $gt: new Date() },
+      })
+      .exec();
+    for (const job of updatedJobs) {
+      // const applications = await this.jobApplicationModel.find({jobId:job._id});
+      await this.jobApplicationModel.updateMany(
+        { jobId: job._id, status: ApplicationStatus.APPLIED },
+        {
+          $set: {
+            status: ApplicationStatus.IN_REVIEW,
+            currentStage: 2,
+            progressPercent: this.computeProgressPercent(
+              2,
+              this.defaultApplicationTotalStages,
+            ),
+            nextStepTitle: 'CV filtering',
+          },
+        },
+      );
+    }
+  }
 
+  // move from in review to shortlisted
   public async updateInReviewApplications():Promise<void>{
     const applications = await this.jobApplicationModel
       .find({
@@ -406,6 +408,7 @@ export class ApplicationsService {
     }
   } 
 
+  // move from shortlisted to interview
   public async updateShortlistedApplications(): Promise<void> {
     const now = new Date();
 
@@ -513,29 +516,38 @@ export class ApplicationsService {
     await interview.save();
   }
 
-  async moveApplicationsTointerview(): Promise<void> {
-    const updatedJobs = await this.jobModel
-      .find({
-        interviewStatus: true,
-      })
-      .exec();
-    for (const job of updatedJobs) {
-      await this.jobApplicationModel.updateMany(
-        { jobId: job._id, status: ApplicationStatus.IN_REVIEW },
-        {
-          $set: {
-            status: ApplicationStatus.INTERVIEW,
-            currentStage: 3,
-            progressPercent: this.computeProgressPercent(
-              3,
-              this.defaultApplicationTotalStages,
-            ),
-            nextStepTitle: 'Interview phase',
-          },
-        },
-      );
-    }
-  }
+  // async moveApplicationsTointerview(): Promise<void> {
+  //   const updatedJobs = await this.jobModel
+  //     .find({
+  //       interviewStatus: true,
+  //     })
+  //     .exec();
+  //   for (const job of updatedJobs) {
+  //     await this.jobApplicationModel.updateMany(
+  //       { jobId: job._id, status: ApplicationStatus.IN_REVIEW },
+  //       {
+  //         $set: {
+  //           status: ApplicationStatus.INTERVIEW,
+  //           currentStage: 3,
+  //           progressPercent: this.computeProgressPercent(
+  //             3,
+  //             this.defaultApplicationTotalStages,
+  //           ),
+  //           nextStepTitle: 'Interview phase',
+  //         },
+  //       },
+  //     );
+  //     const applications = await this.jobApplicationModel.find({jobId:job._id}).exec();
+  //     if(applications)
+  //     {
+  //       for(const app of applications)
+  //       {
+            
+  //       }
+  //     }
+      
+  //   }
+  // }
 
   // public async rejectOverDueInterviews() {
   //   const updatedJobs = await this.jobModel
