@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -49,6 +50,7 @@ type InterviewContext = {
 @Injectable()
 export class InterviewsService {
   private readonly bucket = process.env.AWS_S3_BUCKET_NAME!;
+  private readonly logger = new Logger(InterviewsService.name);
 
   constructor(
     @InjectModel(JobApplication.name)
@@ -476,8 +478,19 @@ export class InterviewsService {
     return this.toSessionResponse({ ...context, application }, interview);
   }
 
-  public async getInterviewResponsesByApplication(application: Types.ObjectId){
-    const candidateInterview = await this.candidateInterviewModel.findOne({applicationId: application});
-    return await this.getInterviewResponses(candidateInterview._id);
+  public async getInterviewResponsesByApplication(
+  application: Types.ObjectId,
+) {
+  const candidateInterview = await this.candidateInterviewModel.findOne({
+    applicationId: application,
+  });
+
+  if (!candidateInterview) {
+    this.logger.warn(
+      `[Interview] No candidate interview found for application ${application}`,
+    );
+    return [];
+  }
+  return this.getInterviewResponses(candidateInterview._id);
   }
 }
