@@ -26,7 +26,9 @@ import { JobApplicationResponseDto } from '../job/dtos/response/jobApplicationRe
 import { JobPostResponseDto } from '../job/dtos/response/jobPostResponse.dto';
 import { JobStatus } from 'src/database/enums/jobStatus.enum';
 import { UploadService } from 'src/upload/upload.service';
-
+import { CandidateInterviewDocument, CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
+import { CandidateInterviewStatus } from 'src/database/enums/candidateInterviewStatus.enum';
+import { InterviewSprintDocument, InterviewSprint } from 'src/database/schemas/interview_sprint.schema';
 @Injectable()
 export class ApplicationsService {
   private readonly defaultApplicationTotalStages = 4;
@@ -38,6 +40,9 @@ export class ApplicationsService {
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
     @InjectModel(Hr.name) private readonly hrModel: Model<HrDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(CandidateInterview.name) private readonly candidateInterviewModel: Model<CandidateInterviewDocument>,
+    @InjectModel(InterviewSprint.name) private readonly interviewSprintModel: Model<InterviewSprintDocument>,
+
     private readonly uploadService: UploadService,
   ) {}
 
@@ -338,29 +343,174 @@ export class ApplicationsService {
   }
 
   // move applications from APPLIED to cv screening phase
-  public async updateApplicationStatuses(): Promise<void> {
-    const updatedJobs = await this.jobModel
+  // public async updateApplicationStatuses(): Promise<void> {
+  //   const updatedJobs = await this.jobModel
+  //     .find({
+  //       status: JobStatus.CLOSED,
+  //       interviewStartDate: { $gt: new Date() },
+  //     })
+  //     .exec();
+  //   for (const job of updatedJobs) {
+  //     await this.jobApplicationModel.updateMany(
+  //       { jobId: job._id, status: ApplicationStatus.APPLIED },
+  //       {
+  //         $set: {
+  //           status: ApplicationStatus.IN_REVIEW,
+  //           currentStage: 2,
+  //           progressPercent: this.computeProgressPercent(
+  //             2,
+  //             this.defaultApplicationTotalStages,
+  //           ),
+  //           nextStepTitle: 'CV filtering',
+  //         },
+  //       },
+  //     );
+  //   }
+  // }
+
+  public async updateInReviewApplications():Promise<void>{
+    const applications = await this.jobApplicationModel
       .find({
-        status: JobStatus.CLOSED,
-        interviewStartDate: { $gt: new Date() },
+        status: ApplicationStatus.IN_REVIEW,
       })
       .exec();
-    for (const job of updatedJobs) {
-      await this.jobApplicationModel.updateMany(
-        { jobId: job._id, status: ApplicationStatus.APPLIED },
-        {
-          $set: {
-            status: ApplicationStatus.IN_REVIEW,
-            currentStage: 2,
-            progressPercent: this.computeProgressPercent(
-              2,
-              this.defaultApplicationTotalStages,
-            ),
-            nextStepTitle: 'In review',
-          },
-        },
+    for(const app of applications){
+      if(app.matchScore > 0.5){
+        const job = await this.jobModel.findOne({_id: app.jobId});
+
+        await this.jobApplicationModel.updateMany(
+          {_id: app._id},
+          {
+            $set:{
+              status: ApplicationStatus.SHORTLISTED,
+              stage: 2,
+              nextStepAt: job.interviewStartDate,
+              nextStepTitle: "schedule Interview"
+            }
+          }
+        )
+      }
+      else{
+        await this.jobApplicationModel.updateMany(
+          {_id: app._id},
+          {
+            $set:{
+              status: ApplicationStatus.CV_FAILED,
+              stage: 3,
+              nextStepAt: null,
+              nextStepTitle: "Waitng Final Decision"
+            }
+          }
+        )
+      }
+    }
+  } 
+
+  public async updateShortlistedApplications(): Promise<void> {
+    const now = new Date();
+
+    // get shortlisted apps
+    const applications = await this.jobApplicationModel.find({
+      status: ApplicationStatus.SHORTLISTED,
+    });
+
+    for (const application of applications) {
+      const job = await this.jobModel.findById(application.jobId);
+
+      if (!job) {
+        continue;
+      }
+
+      // if job interviewstart date hasn't started yet continue
+      if (!this.shouldMoveToInterview(job, now)) {
+        continue;
+      }
+
+      // update applications
+      await this.moveApplicationToInterview(application, job);
+
+      // update the interview objects
+      const sprint = await this.getOrCreateInterviewSprint(job);
+
+      await this.getOrCreateCandidateInterview(
+        application,
+        job,
+        sprint,
       );
     }
+  }
+
+  private shouldMoveToInterview(job: JobDocument, now: Date): boolean {
+    return (
+      job.status === JobStatus.CLOSED &&
+      job.interviewStartDate <= now &&
+      job.interviewEndDate > now
+    );
+  }
+
+  private async moveApplicationToInterview(
+    application: JobApplicationDocument,
+    job: JobDocument,
+  ): Promise<void> {
+
+    application.status = ApplicationStatus.INTERVIEW;
+    application.currentStage = 3;
+    application.nextStepTitle = 'AI interview evaluation';
+    application.nextStepAt = job.interviewEndDate;
+
+    await application.save();
+  }
+
+  private async getOrCreateInterviewSprint(
+    job: JobDocument,
+  ): Promise<InterviewSprintDocument> {
+
+    let sprint = await this.interviewSprintModel.findOne({
+      jobId: job._id,
+    });
+
+    if (sprint) {
+      return sprint;
+    }
+
+    sprint = await this.interviewSprintModel.create({
+      jobId: job._id,
+      title: job.title,
+      start_date: job.interviewStartDate,
+      end_date: job.interviewEndDate,
+      createdBy: job.hr,
+    });
+
+    return sprint;
+  }
+
+  private async getOrCreateCandidateInterview(
+    application: JobApplicationDocument,
+    job: JobDocument,
+    sprint: InterviewSprintDocument,
+  ): Promise<void> {
+
+    let interview = await this.candidateInterviewModel.findOne({
+      applicationId: application._id,
+    });
+
+    if (!interview) {
+      await this.candidateInterviewModel.create({
+        applicationId: application._id,
+        jobId: job._id,
+        sprintId: sprint._id,
+        status: CandidateInterviewStatus.INVITED,
+        started_at: null,
+        submitted_at: null,
+      });
+
+      return;
+    }
+
+    interview.sprintId = sprint._id;
+    interview.status = CandidateInterviewStatus.INVITED;
+
+    await interview.save();
   }
 
   async moveApplicationsTointerview(): Promise<void> {
@@ -387,33 +537,33 @@ export class ApplicationsService {
     }
   }
 
-  public async rejectOverDueInterviews() {
-    const updatedJobs = await this.jobModel
-      .find({
-        interviewStatus: false,
-        interviewEndDate: { $eq: new Date() },
-      })
-      .exec();
+  // public async rejectOverDueInterviews() {
+  //   const updatedJobs = await this.jobModel
+  //     .find({
+  //       interviewStatus: false,
+  //       interviewEndDate: { $eq: new Date() },
+  //     })
+  //     .exec();
 
-    for (const job of updatedJobs) {
-      await this.jobApplicationModel.updateMany(
-        {
-          jobId: job._id,
-          status: ApplicationStatus.INTERVIEW,
-          interviewed: false,
-        },
-        {
-          $set: {
-            status: ApplicationStatus.REJECTED,
-            currentStage: 4,
-            progressPercent: this.computeProgressPercent(
-              4,
-              this.defaultApplicationTotalStages,
-            ),
-            nextStepTitle: 'Missed Interview',
-          },
-        },
-      );
-    }
-  }
+  //   for (const job of updatedJobs) {
+  //     await this.jobApplicationModel.updateMany(
+  //       {
+  //         jobId: job._id,
+  //         status: ApplicationStatus.INTERVIEW,
+  //         interviewed: false,
+  //       },
+  //       {
+  //         $set: {
+  //           status: ApplicationStatus.REJECTED,
+  //           currentStage: 4,
+  //           progressPercent: this.computeProgressPercent(
+  //             4,
+  //             this.defaultApplicationTotalStages,
+  //           ),
+  //           nextStepTitle: 'Missed Interview',
+  //         },
+  //       },
+  //     );
+  //   }
+  // }
 }

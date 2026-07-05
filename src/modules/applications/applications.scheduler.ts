@@ -7,21 +7,35 @@ export class ApplicationsScheduler {
   private readonly logger = new Logger(ApplicationsScheduler.name);
   constructor(private readonly applicationsService: ApplicationsService) {}
 
-  @Cron('0 0 * * *')
-  async updateApplicationStatuses() {
-    this.logger.log('Running scheduled task: updateApplicationStatuses');
-    await this.applicationsService.updateApplicationStatuses();
-  }
+  // @Cron('0 0 * * *')
+  // async updateApplicationStatuses() {
+  //   this.logger.log('Running scheduled task: updateApplicationStatuses');
+  //   await this.applicationsService.updateApplicationStatuses();
+  // }
 
-  @Cron('0 0 * * *')
+  @Cron('* * * * *')
   async moveApplicationsTointerview() {
     this.logger.log('Running scheduled task: moveApplicationsTointerview');
     await this.applicationsService.moveApplicationsTointerview();
   }
 
-  @Cron(`0 0 * * *`)
-  async rejectOverDueInterviews() {
-    this.logger.log('Runing scheduled task: rejectOverDueInterviews');
-    await this.applicationsService.rejectOverDueInterviews();
+  // @Cron(`0 0 * * *`)
+  // async rejectOverDueInterviews() {
+  //   this.logger.log('Runing scheduled task: rejectOverDueInterviews');
+  //   await this.applicationsService.rejectOverDueInterviews();
+  // }
+
+  // move applications from in review to next stage
+  @Cron(`* * * * *`)
+  async updateInReviewApplications() {
+    this.logger.log('Running scheduled task: updateInReviewApplications');
+    await this.applicationsService.updateInReviewApplications();
+  }
+
+  // move applications from shortlisted to interview to next stage
+  @Cron(`* * * * *`)
+  async updateShortlistedApplications() {
+    this.logger.log('Running scheduled task: updateShortlistedApplications');
+    await this.applicationsService.updateShortlistedApplications();
   }
 }

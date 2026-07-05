@@ -669,7 +669,7 @@ export class JobService {
       appliedAt: new Date(),
       currentStage: 1,
       totalStages: this.defaultApplicationTotalStages,
-      nextStepTitle: 'Application submitted',
+      nextStepTitle: 'CV scan',
       nextStepAt: null,
     });
 

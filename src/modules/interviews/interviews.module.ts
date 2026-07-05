@@ -25,6 +25,7 @@ import { AuthModule } from '../auth/auth.module';
 import { S3Module } from 'src/s3/s3.module';
 import { InterviewsController } from './interviews.controller';
 import { InterviewsService } from './interviews.service';
+import { VideoAiAnalysisSchema, VideoAiAnalysis } from 'src/database/schemas/video_ai_analysis.schema';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { InterviewsService } from './interviews.service';
       { name: InterviewQuestion.name, schema: InterviewQuestionSchema },
       { name: CandidateInterview.name, schema: CandidateInterviewSchema },
       { name: InterviewResponse.name, schema: InterviewResponseSchema },
+      { name: VideoAiAnalysis.name, schema: VideoAiAnalysisSchema },
     ]),
   ],
   controllers: [InterviewsController],
