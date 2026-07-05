@@ -29,6 +29,7 @@ import { UploadService } from 'src/upload/upload.service';
 import { CandidateInterviewDocument, CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
 import { CandidateInterviewStatus } from 'src/database/enums/candidateInterviewStatus.enum';
 import { InterviewSprintDocument, InterviewSprint } from 'src/database/schemas/interview_sprint.schema';
+import { UserJobScore } from 'src/database/schemas/user_job_score.schema';
 @Injectable()
 export class ApplicationsService {
   private readonly defaultApplicationTotalStages = 4;
@@ -42,6 +43,7 @@ export class ApplicationsService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectModel(CandidateInterview.name) private readonly candidateInterviewModel: Model<CandidateInterviewDocument>,
     @InjectModel(InterviewSprint.name) private readonly interviewSprintModel: Model<InterviewSprintDocument>,
+    @InjectModel(UserJobScore.name) private readonly userJobScoreModel: Model<UserJobScore>,
 
     private readonly uploadService: UploadService,
   ) {}
@@ -119,7 +121,7 @@ export class ApplicationsService {
     const candidate = await this.getCandidateForUser(user);
     const candidateId = candidate._id;
 
-    const [totalApplied, upcomingInterviews, bestDoc] = await Promise.all([
+    const [totalApplied, upcomingInterviews, bestScoreDoc] = await Promise.all([
       this.jobApplicationModel.countDocuments({ candidateId }).exec(),
       this.jobApplicationModel
         .countDocuments({
@@ -128,17 +130,17 @@ export class ApplicationsService {
           nextStepAt: { $gt: new Date() },
         })
         .exec(),
-      this.jobApplicationModel
-        .findOne({ candidateId, matchScore: { $ne: null, $exists: true } })
-        .sort({ matchScore: -1 })
-        .select('matchScore')
+      this.userJobScoreModel
+        .findOne({ candidateId })
+        .sort({ score: -1 })
+        .select('score')
         .lean()
         .exec(),
     ]);
 
     const bestMatchScore =
-      bestDoc && typeof bestDoc.matchScore === 'number'
-        ? bestDoc.matchScore
+      bestScoreDoc && typeof bestScoreDoc.score === 'number'
+        ? bestScoreDoc.score
         : null;
 
     let matchScoreHeadline: string | null = null;
