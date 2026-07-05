@@ -28,6 +28,7 @@ import { VideoAiAnalysisDocument } from 'src/database/schemas/video_ai_analysis.
 import { CandidateInterviewDocument,CandidateInterview } from 'src/database/schemas/candidate_interview.schema';
 import { CandidateInterviewStatus } from 'src/database/enums/candidateInterviewStatus.enum';
 import { InterviewSprint, InterviewSprintDocument } from 'src/database/schemas/interview_sprint.schema';
+import { EmailService } from '../email/email.service';
 @Injectable()
 export class JobDashboardService {
   constructor(
@@ -41,6 +42,7 @@ export class JobDashboardService {
     @InjectModel('VideoAiAnalysis') private readonly videoAiAnalysisModel: Model<VideoAiAnalysisDocument>,
     @InjectModel(CandidateInterview.name) private readonly canidateInterviewModel: Model<CandidateInterviewDocument>,
     @InjectModel(InterviewSprint.name) private readonly interviewSprintModel: Model<InterviewSprintDocument>,
+    private readonly EmailService: EmailService,
   ) {}
 
   private assertHrUser(user: UserDocument): void {
@@ -220,6 +222,9 @@ export class JobDashboardService {
     if (!application) {
       throw new ForbiddenException('Application not found');
     }
+    const candidate = await this.candidateModel.findById(application.candidateId).exec();
+      if(!candidate)
+        throw new NotFoundException('Candidate not found');
     application.status = dto.applicationStatus;
     const job = await this.jobModel.findOne({_id:application.jobId}).exec();
     if (dto.applicationStatus === ApplicationStatus.ACCEPTED) {
@@ -227,6 +232,7 @@ export class JobDashboardService {
       application.currentStage = application.totalStages;
       application.nextStepAt = null;
       application.nextStepTitle = "Accepted";
+      await this.EmailService.sendApplicationAcceptedEmail(candidate.fullName,userPayload.email,job.title);
     }
     if (dto.applicationStatus === ApplicationStatus.INTERVIEW) {
       // application.interviewed = true;
@@ -248,8 +254,21 @@ export class JobDashboardService {
           submitted_at: null
         })
       }
+      await this.EmailService.sendInterviewInvitationEmail(
+        candidate.fullName,
+        userPayload.email,
+        job.title,
+        job.interviewStartDate,
+        job.interviewEndDate
+      );
     }
     if (dto.applicationStatus === ApplicationStatus.REJECTED) {
+      if (application.status === ApplicationStatus.CV_FAILED) {
+        const uniqueSkills = job.skills.filter((skill) => !candidate.skills.includes(skill));
+        if(uniqueSkills.length > 0)
+          await this.EmailService.sendCvRejectionEmail(candidate.fullName, userPayload.email, job.title, uniqueSkills);
+        application.feedbackSummary = "Rejected due to CV not matching the job requirements";
+      }
       // application.interviewed = true;
       application.currentStage = application.totalStages;
       application.nextStepAt = null;

@@ -12,18 +12,21 @@ import { ExportModule } from '../export/export.module';
 import { VideoAiAnalysisSchema, VideoAiAnalysis } from 'src/database/schemas/video_ai_analysis.schema';
 import { CandidateInterviewSchema, CandidateInterview} from 'src/database/schemas/candidate_interview.schema';
 import { InterviewSprint, InterviewSprintSchema } from 'src/database/schemas/interview_sprint.schema';
+import { EmailModule } from '../email/email.module';
+
 @Module({
   imports: [
     AuthModule,
     ExportModule,
+    EmailModule,
     MongooseModule.forFeature([
       { name: 'User', schema: UserSchema },
       { name: 'JobApplication', schema: JobApplicationSchema },
       { name: 'Job', schema: JobSchema },
       { name: 'Candidate', schema: CandidateSchema },
-      { name: 'VideoAiAnalysis', schema: VideoAiAnalysisSchema },
       { name: CandidateInterview.name, schema: CandidateInterviewSchema },
       { name: InterviewSprint.name, schema: InterviewSprintSchema },
+      { name: VideoAiAnalysis.name, schema: VideoAiAnalysisSchema }
     ])
   ],
   controllers: [JobDashboardController],

@@ -287,4 +287,324 @@ export class EmailService {
     `,
     });
   }
+  public async sendCvRejectionEmail(
+    candidateName: string,
+    candidateEmail: string,
+    jobTitle: string,
+    missingSkills: string[],
+  ): Promise<void> {
+    const logoUrl = await this.uploadService.getLogoUrl();
+
+    const missingSkillsHtml =
+      missingSkills.length > 0
+        ? `
+          <ul style="padding-left:20px; margin:0;">
+            ${missingSkills
+              .map(
+                (skill) => `
+                  <li style="margin-bottom:8px; color:#374151;">
+                    ${skill}
+                  </li>`,
+              )
+              .join('')}
+          </ul>
+        `
+        : `
+          <p style="color:#374151; margin:0;">
+            No specific missing skills were identified.
+          </p>
+        `;
+
+    await this.sendMail({
+      to: candidateEmail,
+      subject: `Update on Your Application for ${jobTitle}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto;">
+
+          <div style="text-align: center; padding: 20px 0;">
+            <img
+              src="${logoUrl}"
+              alt="Hirely Logo"
+              style="max-width:150px; height:auto;"
+            />
+          </div>
+
+          <div
+            style="
+              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+              padding:30px;
+              border-radius:10px 10px 0 0;
+            "
+          >
+            <h1
+              style="
+                color:#ffffff;
+                margin:0;
+                font-size:28px;
+              "
+            >
+              Application Update
+            </h1>
+          </div>
+
+          <div
+            style="
+              background:#f9fafb;
+              padding:30px;
+              border-radius:0 0 10px 10px;
+              border:1px solid #e5e7eb;
+            "
+          >
+            <p style="color:#374151; font-size:16px;">
+              Hi ${candidateName},
+            </p>
+
+            <p style="color:#374151; font-size:16px;">
+              Thank you for your interest in the
+              <strong>${jobTitle}</strong> position and for taking the time to
+              submit your application.
+            </p>
+
+            <p style="color:#374151; font-size:16px;">
+              After reviewing your resume, we have decided not to move forward
+              with your application for this role.
+            </p>
+
+            <div
+              style="
+                background:#ffffff;
+                padding:20px;
+                border-radius:8px;
+                margin:20px 0;
+                border-left:4px solid #ef4444;
+              "
+            >
+              <h3
+                style="
+                  color:#111827;
+                  margin:0 0 15px 0;
+                  font-size:18px;
+                "
+              >
+                Skills Missing from Your Resume
+              </h3>
+
+              ${missingSkillsHtml}
+            </div>
+
+            <p
+              style="
+                color:#6b7280;
+                font-size:14px;
+                margin-top:20px;
+              "
+            >
+              We encourage you to strengthen these areas and apply again in the
+              future when your experience aligns more closely with the role's
+              requirements. We truly appreciate your interest in joining Hirely
+              and wish you success in your career journey.
+            </p>
+          </div>
+
+          <div
+            style="
+              text-align:center;
+              padding:20px;
+              color:#9ca3af;
+              font-size:14px;
+            "
+          >
+            <p style="margin:0;">
+              Best regards,<br />
+              The Hirely Team
+            </p>
+          </div>
+
+        </div>
+      `,
+    });
+  }
+
+  public async sendApplicationAcceptedEmail(
+    candidateName: string,
+    candidateEmail: string,
+    jobTitle: string,
+  ): Promise<void> {
+    const logoUrl = await this.uploadService.getLogoUrl();
+
+    await this.sendMail({
+      to: candidateEmail,
+      subject: `Your Application for ${jobTitle} Has Been Shortlisted`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height:1.6; max-width:600px; margin:0 auto;">
+
+          <div style="text-align:center; padding:20px 0;">
+            <img src="${logoUrl}" alt="Hirely Logo"
+                style="max-width:150px; height:auto;" />
+          </div>
+
+          <div style="background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);
+                      padding:30px;
+                      border-radius:10px 10px 0 0;">
+            <h1 style="margin:0; color:white;">
+              Congratulations! 🎉
+            </h1>
+          </div>
+
+          <div style="background:#f9fafb;
+                      border:1px solid #e5e7eb;
+                      padding:30px;
+                      border-radius:0 0 10px 10px;">
+
+            <p>Hi <strong>${candidateName}</strong>,</p>
+
+            <p>
+              We're pleased to let you know that your application for the
+              <strong>${jobTitle}</strong> position has successfully passed
+              our initial resume screening.
+            </p>
+
+            <div style="background:white;
+                        padding:20px;
+                        border-left:4px solid #22c55e;
+                        border-radius:8px;
+                        margin:20px 0;">
+
+              <h3 style="margin-top:0;">What's Next?</h3>
+
+              <p>
+                Your application has been shortlisted and you'll soon receive
+                an invitation to complete the interview stage.
+              </p>
+
+              <p>
+                Please keep an eye on your email for further instructions.
+              </p>
+
+            </div>
+
+            <p style="color:#6b7280;">
+              Thank you for your interest in joining our team. We look forward
+              to learning more about you during the next stage of the process.
+            </p>
+
+          </div>
+
+          <div style="text-align:center;
+                      padding:20px;
+                      color:#9ca3af;">
+            Best regards,<br/>
+            The Hirely Team
+          </div>
+
+        </div>
+      `,
+    });
+  }
+
+  public async sendInterviewInvitationEmail(
+    candidateName: string,
+    candidateEmail: string,
+    jobTitle: string,
+    interviewStart: Date,
+    interviewEnd: Date,
+  ): Promise<void> {
+
+    const logoUrl = await this.uploadService.getLogoUrl();
+
+    await this.sendMail({
+      to: candidateEmail,
+      subject: `Interview Invitation for ${jobTitle}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;
+                    line-height:1.6;
+                    max-width:600px;
+                    margin:0 auto;">
+
+          <div style="text-align:center;padding:20px 0;">
+            <img src="${logoUrl}"
+                style="max-width:150px;"
+                alt="Hirely Logo"/>
+          </div>
+
+          <div style="background:linear-gradient(135deg,#3b82f6,#2563eb);
+                      padding:30px;
+                      border-radius:10px 10px 0 0;">
+
+            <h1 style="margin:0;color:white;">
+              Interview Invitation 🎥
+            </h1>
+
+          </div>
+
+          <div style="background:#f9fafb;
+                      border:1px solid #e5e7eb;
+                      padding:30px;
+                      border-radius:0 0 10px 10px;">
+
+            <p>Hi <strong>${candidateName}</strong>,</p>
+
+            <p>
+              Congratulations! You have been invited to participate in the AI
+              interview for the
+              <strong>${jobTitle}</strong> position.
+            </p>
+
+            <div style="background:white;
+                        padding:20px;
+                        border-radius:8px;
+                        border-left:4px solid #3b82f6;
+                        margin:20px 0;">
+
+              <h3 style="margin-top:0;">
+                Interview Availability Window
+              </h3>
+
+              <p>
+                <strong>Available From:</strong><br/>
+                ${interviewStart.toLocaleString()}
+              </p>
+
+              <p>
+                <strong>Deadline:</strong><br/>
+                ${interviewEnd.toLocaleString()}
+              </p>
+
+            </div>
+
+            <div style="background:#eff6ff;
+                        padding:20px;
+                        border-radius:8px;
+                        margin-top:20px;">
+
+              <h3 style="margin-top:0;">
+                Before You Begin
+              </h3>
+
+              <ul>
+                <li>Use a stable internet connection.</li>
+                <li>Ensure your camera and microphone are working.</li>
+                <li>Choose a quiet environment.</li>
+                <li>Complete the interview before the deadline.</li>
+              </ul>
+
+            </div>
+
+            <p style="margin-top:25px;">
+              We wish you the best of luck and look forward to your responses.
+            </p>
+
+          </div>
+
+          <div style="text-align:center;
+                      padding:20px;
+                      color:#9ca3af;">
+            Best regards,<br/>
+            The Hirely Team
+          </div>
+
+        </div>
+      `,
+    });
+  }
 }
