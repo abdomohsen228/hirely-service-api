@@ -127,7 +127,7 @@ export class InterviewSumService {
         const videoUrl =  await this.uploadService.getVideoUrlByKey(video.videoS3Key);
         interviewResponses.push({
             question: questionBody.question,
-            transcription: interviewResponse.transcription,
+            transcription: video.transcription,
             order: questionBody.order,
             responseURL: videoUrl,
             responseDuration: String(interviewResponse.responseDuration),

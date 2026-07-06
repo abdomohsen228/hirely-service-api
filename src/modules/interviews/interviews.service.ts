@@ -518,7 +518,7 @@ export class InterviewsService {
 
   public async updateEvaluatedApplications(): Promise<void> {
     const applications = await this.jobApplicationModel.find(
-      {videosProcessedByAi: true, status: ApplicationStatus.PENDING}
+      {status: ApplicationStatus.PENDING}
     )
     for(const app of applications){
       const candidateInterview =  await this.candidateInterviewModel.findOne(
@@ -536,6 +536,7 @@ export class InterviewsService {
             candidateInterview.status = CandidateInterviewStatus.EVALUATED;
             candidateInterview.save();
             app.nextStepAt = null;
+            app.videosProcessedByAi = true;
             app.nextStepTitle = "Waiting For Final decision";
           }
         }
