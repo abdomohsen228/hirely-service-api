@@ -80,15 +80,23 @@ export class JobDashboardService {
       .exec();
   }
 
-  private async getAverageMatchScore(jobId: string): Promise<number> {
-    const avgMatchScore = await this.UserJobScoreModel
-      .aggregate([
-        { $match: { jobId: jobId.toString() } },
-        { $group: { _id: null, average: { $avg: '$score' } } },
-      ])
-      .exec();
-    return avgMatchScore.length > 0 ? avgMatchScore[0].average : 0;
-  }
+async getAverageMatchScore(jobId: string): Promise<number> {
+  const [result] = await this.UserJobScoreModel.aggregate([
+    {
+      $match: {
+        jobId: new Types.ObjectId(jobId),
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        average: { $avg: '$score' },
+      },
+    },
+  ]);
+
+  return result?.average ?? 0;
+}
 
   private async getApplications(
     jobId: string,
@@ -215,12 +223,12 @@ export class JobDashboardService {
       page,
       limit,
       applicationStatus,
-      matchScore,
+      Math.round(matchScore * 100) / 100,
     );
     const totalFilteredApplications = await this.getFilteredApplicationsCount(
       String(jobId),
       applicationStatus,
-      matchScore,
+      Math.round(matchScore * 100) / 100,
     );
     // const CVRank = await this.
     const dashboardData = [] as DashboardDataDto[];
@@ -267,7 +275,7 @@ export class JobDashboardService {
       totalApplications: totalApplications,
       applicationsToday: applicationsToday,
       shortlistedCandidates: shortlistedCandidates,
-      averageMatchScore: avgMatchScore,
+      averageMatchScore: Math.round(avgMatchScore * 100) / 100,
       dashboardData: dashboardData,
       pagination: {
         page,
