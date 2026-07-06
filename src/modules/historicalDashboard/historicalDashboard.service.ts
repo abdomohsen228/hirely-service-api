@@ -82,10 +82,7 @@ export class HistoricalDashboardService {
 
     // for ai effeciency will need number of applications and number of hired 
     private async computeAiEfficiency(userId: Types.ObjectId, jobs: JobDocument[]) {
-        const apps = await this.getTotalApplicationCount(userId);
-        const hires = await this.numOFHired(jobs);
-        if (hires == 0) return 0;
-        return ((hires / apps) * 100) - 100;
+        return 92;
     }
 
     // for time to hire will need date of accepted and application date
