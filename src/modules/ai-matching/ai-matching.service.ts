@@ -175,7 +175,7 @@ export class AiMatchingService {
   ): Promise<void> {
     for (const recommendation of recommendations) {
       await this.userJobScoreModel.updateOne(
-        { candidateId, jobId: recommendation.job_id },
+        { candidateId, jobId: new Types.ObjectId(recommendation.job_id) },
         {
           score: recommendation.match_score,
           matchedSkills: recommendation.matched_skills ?? [],

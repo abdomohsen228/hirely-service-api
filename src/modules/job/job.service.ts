@@ -609,7 +609,7 @@ export class JobService {
           .findOne({ jobId, candidateId: candidate._id })
           .exec(),
         this.userJobScoreModel
-          .findOne({ jobId, candidateId: candidate._id })
+          .findOne({ jobId: new Types.ObjectId(jobId), candidateId: candidate._id })
           .select('score')
           .exec(),
       ]);
@@ -861,22 +861,25 @@ export class JobService {
       const user = await this.userModel.findById(doc.createdBy).exec();
       questions = await this.getInterviewerQuestions(user, (doc._id).toString());
     }
-    // console.log('candidate', candidate);
-    const userJobScore = await this.userJobScoreModel
-      .findOne({
-        jobId: doc._id,
-        candidateId: candidate?._id,
-      })
-      // .select('score matchedSkills')
-      .exec();
-    console.log('userJobScore', userJobScore);
+    
     let score = null;
     let numOfMatchedSkills = 0;
-    if (userJobScore) {
-      score = userJobScore.score;
-      numOfMatchedSkills = userJobScore.matchedSkills.length;
+    
+    if (candidate) {
+      const userJobScore = await this.userJobScoreModel
+        .findOne({
+          jobId: doc._id,
+          candidateId: candidate._id,
+        })
+        .exec();
+      
+      if (userJobScore) {
+        score = userJobScore.score;
+        numOfMatchedSkills = userJobScore.matchedSkills.length;
+      }
     }
-    if(matchScore === undefined && score !== null) {
+    
+    if (matchScore === undefined && score !== null) {
       matchScore = score;
     }
     const hrProfileToUse = hrProfile ?? (doc.hr ? await this.hrModel.findById(doc.hr).exec() : null);
