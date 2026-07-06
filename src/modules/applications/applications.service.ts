@@ -265,9 +265,10 @@ export class ApplicationsService {
     let score = null;
     if (job) {
       score = await this.userJobScoreModel.findOne({candidateId: candidate._id, jobId: job._id}).exec();
+      console.log(`[getMyApplicationById] Candidate: ${candidate._id}, Job: ${job._id}, Score found: ${score ? score.score : null}`);
     }
     return {
-      application: score ? this.toApplicationResponse(application, cv, Math.round(score.score / 100) * 100) : this.toApplicationResponse(application, cv),
+      application: score ? this.toApplicationResponse(application, cv, Math.round(score.score * 100) / 100) : this.toApplicationResponse(application, cv),
       job: job ? await this.toResponse(job) : null,
     };
   }
