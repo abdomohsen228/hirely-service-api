@@ -218,17 +218,20 @@ async getAverageMatchScore(jobId: string): Promise<number> {
     // get average match score
     const avgMatchScore = await this.getAverageMatchScore(String(jobId));
     // get dashboard data for each application status
+    const normalizedMatchScore = matchScore !== undefined ? Math.round(matchScore * 100) / 100 : undefined;
+    console.log(`[getJobDashboard] jobId: ${jobId}, matchScore: ${matchScore}, normalizedMatchScore: ${normalizedMatchScore}, applicationStatus: ${applicationStatus}`);
     const applications = await this.getApplications(
       String(jobId),
       page,
       limit,
       applicationStatus,
-      Math.round(matchScore * 100) / 100,
+      normalizedMatchScore,
     );
+    console.log(`[getJobDashboard] Applications returned: ${applications.length}`);
     const totalFilteredApplications = await this.getFilteredApplicationsCount(
       String(jobId),
       applicationStatus,
-      Math.round(matchScore * 100) / 100,
+      normalizedMatchScore,
     );
     // const CVRank = await this.
     const dashboardData = [] as DashboardDataDto[];

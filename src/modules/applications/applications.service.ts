@@ -267,7 +267,7 @@ export class ApplicationsService {
       score = await this.userJobScoreModel.findOne({candidateId: candidate._id, jobId: job._id}).exec();
     }
     return {
-      application: score ? this.toApplicationResponse(application, cv, score.score) : this.toApplicationResponse(application, cv),
+      application: score ? this.toApplicationResponse(application, cv, Math.round(score.score / 100) * 100) : this.toApplicationResponse(application, cv),
       job: job ? await this.toResponse(job) : null,
     };
   }
