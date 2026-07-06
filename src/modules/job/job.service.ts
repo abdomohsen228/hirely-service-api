@@ -585,10 +585,26 @@ export class JobService {
       .sort({ createdAt: -1 })
       .limit(5)
       .exec();
-    
-      const candidate = user.role === UserRole.CANDIDATE ? await this.getCandidateForUser(user) : null;
 
-    return Promise.all(jobs.map((job) => this.toResponse(job, null, null, null, candidate)));
+    const candidate = user.role === UserRole.CANDIDATE ? await this.getCandidateForUser(user) : null;
+
+    // Fetch all UserJobScore records for the candidate in one query
+    let scoreMap: Map<string, number> = new Map();
+    if (candidate) {
+      const jobIds = jobs.map((job) => job._id);
+      const scores = await this.userJobScoreModel
+        .find({ candidateId: candidate._id, jobId: { $in: jobIds } })
+        .exec();
+      scoreMap = new Map(
+        scores.map((score) => [score.jobId.toString(), score.score]),
+      );
+    }
+
+    return Promise.all(
+      jobs.map((job) =>
+        this.toResponse(job, null, null, scoreMap.get(job._id.toString()), candidate),
+      ),
+    );
   }
 
   public async getJobPostById(

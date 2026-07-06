@@ -83,7 +83,7 @@ export class JobDashboardService {
   private async getAverageMatchScore(jobId: string): Promise<number> {
     const avgMatchScore = await this.UserJobScoreModel
       .aggregate([
-        { $match: { jobId: new Types.ObjectId(jobId) } },
+        { $match: { jobId: jobId.toString() } },
         { $group: { _id: null, average: { $avg: '$score' } } },
       ])
       .exec();
@@ -98,7 +98,7 @@ export class JobDashboardService {
     matchScore?: number,
   ) {
     const skip = (page - 1) * limit;
-    const filter: any = { jobId: new Types.ObjectId(jobId) };
+    const filter: any = { jobId: jobId.toString() };
     if (applicationStatus) {
       filter.status = applicationStatus;
     }
@@ -108,7 +108,7 @@ export class JobDashboardService {
     // Get UserJobScore records for all applications
     const candidateIds = applications.map((app) => app.candidateId);
     const jobScores = await this.UserJobScoreModel
-      .find({ jobId: new Types.ObjectId(jobId), candidateId: { $in: candidateIds } })
+      .find({ jobId: jobId.toString(), candidateId: { $in: candidateIds } })
       .exec();
 
     console.log(`[JobDashboard] Found ${jobScores.length} UserJobScore records for ${candidateIds.length} candidates`);
@@ -159,7 +159,7 @@ export class JobDashboardService {
     // Get UserJobScore records for all applications
     const candidateIds = applications.map((app) => app.candidateId);
     const jobScores = await this.UserJobScoreModel
-      .find({ jobId: new Types.ObjectId(jobId), candidateId: { $in: candidateIds } })
+      .find({ jobId: jobId.toString(), candidateId: { $in: candidateIds } })
       .exec();
 
     const scoreMap = new Map(

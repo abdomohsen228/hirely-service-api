@@ -262,9 +262,9 @@ export class ApplicationsService {
 
     const job = await this.jobModel.findById(application.jobId).exec();
     const cv = await this.uploadService.getCvUrlByKey(application.resumeUrl);
-    const score = await this.userJobScoreModel.findOne({candidateId:candidate._id, jobId:job._id}).exec();
+    const score = await this.userJobScoreModel.findOne({candidateId: candidate._id, jobId: job._id}).exec();
     return {
-      application: score ? this.toApplicationResponse(application,cv,score.score) : this.toApplicationResponse(application,cv),
+      application: score ? this.toApplicationResponse(application, cv, score.score) : this.toApplicationResponse(application, cv),
       job: job ? await this.toResponse(job) : null,
     };
   }
