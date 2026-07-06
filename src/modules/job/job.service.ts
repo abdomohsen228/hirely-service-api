@@ -664,11 +664,14 @@ export class JobService {
         'Upload your resume before applying to a job',
       );
     }
+    const score = await this.userJobScoreModel.findOne({candidateId:candidate._id, jobId:job._id}).exec();
+    console.log(`Match score for job: ${job.title} and candidate: ${candidate.fullName} is ${score.score}`)
 
     const application = await this.jobApplicationModel.create({
       candidateId: candidate._id,
       jobId: job._id,
       resumeUrl,
+      matchScore: score? score.score : 0,
       status: ApplicationStatus.APPLIED,
       appliedAt: new Date(),
       currentStage: 1,
