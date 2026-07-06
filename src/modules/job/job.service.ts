@@ -592,18 +592,22 @@ export class JobService {
     let scoreMap: Map<string, number> = new Map();
     if (candidate) {
       const jobIds = jobs.map((job) => job._id);
+      console.log(`[getRecentJobs] Candidate: ${candidate._id}, Job IDs: ${jobIds.map(id => id.toString()).join(', ')}`);
       const scores = await this.userJobScoreModel
         .find({ candidateId: candidate._id, jobId: { $in: jobIds } })
         .exec();
+      console.log(`[getRecentJobs] Found ${scores.length} UserJobScore records`);
       scoreMap = new Map(
         scores.map((score) => [score.jobId.toString(), score.score]),
       );
     }
 
     return Promise.all(
-      jobs.map((job) =>
-        this.toResponse(job, null, null, scoreMap.get(job._id.toString()), candidate),
-      ),
+      jobs.map((job) => {
+        const score = scoreMap.get(job._id.toString());
+        console.log(`[getRecentJobs] Job ${job._id}, Score: ${score}`);
+        return this.toResponse(job, null, null, score, candidate);
+      }),
     );
   }
 
@@ -878,10 +882,10 @@ export class JobService {
       questions = await this.getInterviewerQuestions(user, (doc._id).toString());
     }
     
-    let score = null;
     let numOfMatchedSkills = 0;
     
-    if (candidate) {
+    // If matchScore is not passed, fetch it from UserJobScore
+    if (matchScore === undefined && candidate) {
       const userJobScore = await this.userJobScoreModel
         .findOne({
           jobId: doc._id,
@@ -890,13 +894,9 @@ export class JobService {
         .exec();
       
       if (userJobScore) {
-        score = userJobScore.score;
+        matchScore = userJobScore.score;
         numOfMatchedSkills = userJobScore.matchedSkills.length;
       }
-    }
-    
-    if (matchScore === undefined && score !== null) {
-      matchScore = score;
     }
     const hrProfileToUse = hrProfile ?? (doc.hr ? await this.hrModel.findById(doc.hr).exec() : null);
     if ( hrProfileToUse && !hrProfile) {
