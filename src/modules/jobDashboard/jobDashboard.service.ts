@@ -251,7 +251,7 @@ export class JobDashboardService {
       application.currentStage = application.totalStages;
       application.nextStepAt = null;
       application.nextStepTitle = "Accepted";
-      // await this.EmailService.sendApplicationAcceptedEmail(candidate.fullName,user.email,job.title);
+      await this.EmailService.sendApplicationAcceptedEmail(candidate.fullName,user.email,job.title);
     }
     if (dto.applicationStatus === ApplicationStatus.INTERVIEW) {
       // application.interviewed = true;
@@ -274,19 +274,19 @@ export class JobDashboardService {
           submitted_at: null
         })
       }
-      // await this.EmailService.sendInterviewInvitationEmail(
-      //   candidate.fullName,
-      //   user.email,
-      //   job.title,
-      //   job.interviewStartDate,
-      //   job.interviewEndDate
-      // );
+      await this.EmailService.sendInterviewInvitationEmail(
+        candidate.fullName,
+        user.email,
+        job.title,
+        job.interviewStartDate,
+        job.interviewEndDate
+      );
     }
     if (dto.applicationStatus === ApplicationStatus.REJECTED) {
       if (application.status === ApplicationStatus.CV_FAILED) {
         const uniqueSkills = job.skills.filter((skill) => !candidate.skills.includes(skill));
         if(uniqueSkills.length > 0)
-          // await this.EmailService.sendCvRejectionEmail(candidate.fullName, user.email, job.title, uniqueSkills);
+          await this.EmailService.sendCvRejectionEmail(candidate.fullName, user.email, job.title, uniqueSkills);
         application.feedbackSummary = "Rejected due to CV not matching the job requirements";
       }
       // application.interviewed = true;

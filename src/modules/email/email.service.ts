@@ -291,6 +291,7 @@ export class EmailService {
     jobTitle: string,
     missingSkills: string[],
   ): Promise<void> {
+    // const logoUrl = await this.uploadService.getLogoUrl();
 
     const missingSkillsHtml =
       missingSkills.length > 0
