@@ -98,7 +98,7 @@ export class JobDashboardService {
     matchScore?: number,
   ) {
     const skip = (page - 1) * limit;
-    const filter: any = { jobId: jobId.toString() };
+    const filter: any = { jobId: new Types.ObjectId(jobId) };
     if (applicationStatus) {
       filter.status = applicationStatus;
     }
@@ -108,7 +108,7 @@ export class JobDashboardService {
     // Get UserJobScore records for all applications
     const candidateIds = applications.map((app) => app.candidateId);
     const jobScores = await this.UserJobScoreModel
-      .find({ jobId: jobId.toString(), candidateId: { $in: candidateIds } })
+      .find({ jobId: new Types.ObjectId(jobId), candidateId: { $in: candidateIds } })
       .exec();
 
     console.log(`[JobDashboard] Found ${jobScores.length} UserJobScore records for ${candidateIds.length} candidates`);
@@ -159,7 +159,7 @@ export class JobDashboardService {
     // Get UserJobScore records for all applications
     const candidateIds = applications.map((app) => app.candidateId);
     const jobScores = await this.UserJobScoreModel
-      .find({ jobId: jobId.toString(), candidateId: { $in: candidateIds } })
+      .find({ jobId: new Types.ObjectId(jobId), candidateId: { $in: candidateIds } })
       .exec();
 
     const scoreMap = new Map(
@@ -228,6 +228,7 @@ export class JobDashboardService {
       const candidateInfo = await this.getCandidateInfo(
         String(application.candidateId),
       );
+
       const analysis  = await this.videoAiAnalysisModel.findOne({applicationId:application._id}).exec();
       let english = 0;
       let body = 0;
