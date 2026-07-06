@@ -152,11 +152,19 @@ export class ApplicationsService {
       }
     }
 
+    // applications with current stage < totalStages
+    const active = await this.jobApplicationModel.countDocuments(
+      {
+        candidateId:candidateId,
+        currentStage:{$lt:4} 
+      }
+      ).exec();
     return {
       totalApplied,
       upcomingInterviews,
       bestMatchScore,
       matchScoreHeadline,
+      activeCount: active
     };
   }
 
@@ -198,12 +206,18 @@ export class ApplicationsService {
         this.uploadService.getCvUrlByKey(application.resumeUrl),
       ),
     );
+    const scores = await Promise.all(
+      applications.map((application) =>
+        this.userJobScoreModel.findOne({jobId:application.jobId, candidateId:application.candidateId}),
+      ),
+    );
     const items: MyJobApplicationItemResponseDto[] = applications.map(
       (application) => {
         const matchedJob = jobsById.get(application.jobId.toString());
         const cv = cvUrls[applications.indexOf(application)];
+        const score = scores[applications.indexOf(application)];
         return {
-          application: this.toApplicationResponse(application, cv),
+          application:score ? this.toApplicationResponse(application,cv,score.score) : this.toApplicationResponse(application,cv),
           job: matchedJob ? this.toResponse(matchedJob) : null,
             // id: doc._id.toString(),
             // title: doc.title,
@@ -260,8 +274,9 @@ export class ApplicationsService {
 
     const job = await this.jobModel.findById(application.jobId).exec();
     const cv = await this.uploadService.getCvUrlByKey(application.resumeUrl);
+    const score = await this.userJobScoreModel.findOne({candidateId:candidate._id, jobId:job._id}).exec();
     return {
-      application: this.toApplicationResponse(application,cv),
+      application: score ? this.toApplicationResponse(application,cv,score.score) : this.toApplicationResponse(application,cv),
       job: job ? this.toResponse(job) : null,
     };
   }
@@ -317,7 +332,8 @@ export class ApplicationsService {
 
   private toApplicationResponse(
     doc: JobApplicationDocument,
-    cv: string
+    cv: string,
+    matchScore?:number
   ): JobApplicationResponseDto {
     const totalStages = doc.totalStages ?? this.defaultApplicationTotalStages;
     const currentStage = doc.currentStage ?? 1;
@@ -335,9 +351,9 @@ export class ApplicationsService {
       nextStepTitle: doc.nextStepTitle ?? null,
       nextStepAt: doc.nextStepAt ?? null,
       matchScore:
-        doc.matchScore === undefined || doc.matchScore === null
+        matchScore === undefined || matchScore === null
           ? null
-          : doc.matchScore,
+          : matchScore,
       feedbackSummary: doc.feedbackSummary ?? null,
       createdAt: doc.get('createdAt'),
       updatedAt: doc.get('updatedAt'),

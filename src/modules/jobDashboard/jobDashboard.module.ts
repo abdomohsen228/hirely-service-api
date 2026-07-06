@@ -13,7 +13,7 @@ import { VideoAiAnalysisSchema, VideoAiAnalysis } from 'src/database/schemas/vid
 import { CandidateInterviewSchema, CandidateInterview} from 'src/database/schemas/candidate_interview.schema';
 import { InterviewSprint, InterviewSprintSchema } from 'src/database/schemas/interview_sprint.schema';
 import { EmailModule } from '../email/email.module';
-
+import { UserJobScore, UserJobScoreSchema } from 'src/database/schemas/user_job_score.schema';
 @Module({
   imports: [
     AuthModule,
@@ -26,7 +26,8 @@ import { EmailModule } from '../email/email.module';
       { name: 'Candidate', schema: CandidateSchema },
       { name: CandidateInterview.name, schema: CandidateInterviewSchema },
       { name: InterviewSprint.name, schema: InterviewSprintSchema },
-      { name: VideoAiAnalysis.name, schema: VideoAiAnalysisSchema }
+      { name: VideoAiAnalysis.name, schema: VideoAiAnalysisSchema },
+      { name: UserJobScore.name, schema: UserJobScoreSchema },
     ])
   ],
   controllers: [JobDashboardController],

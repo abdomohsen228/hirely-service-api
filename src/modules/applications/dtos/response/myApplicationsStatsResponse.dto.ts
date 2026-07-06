@@ -24,4 +24,11 @@ export class MyApplicationsStatsResponseDto {
     description: 'Optional headline when bestMatchScore crosses a threshold',
   })
   matchScoreHeadline: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    example: 12,
+    description: 'Number of active applications',
+  })
+  activeCount: number;
 }

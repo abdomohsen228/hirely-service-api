@@ -29,6 +29,8 @@ import { CandidateInterviewDocument,CandidateInterview } from 'src/database/sche
 import { CandidateInterviewStatus } from 'src/database/enums/candidateInterviewStatus.enum';
 import { InterviewSprint, InterviewSprintDocument } from 'src/database/schemas/interview_sprint.schema';
 import { EmailService } from '../email/email.service';
+import { UserJobScore, UserJobScoreDocument} from 'src/database/schemas/user_job_score.schema';
+// import { VideoAiAnalysis, VideoAiAnalysisDocument } from 'src/database/schemas/video_ai_analysis.schema';
 @Injectable()
 export class JobDashboardService {
   constructor(
@@ -42,6 +44,7 @@ export class JobDashboardService {
     @InjectModel('VideoAiAnalysis') private readonly videoAiAnalysisModel: Model<VideoAiAnalysisDocument>,
     @InjectModel(CandidateInterview.name) private readonly canidateInterviewModel: Model<CandidateInterviewDocument>,
     @InjectModel(InterviewSprint.name) private readonly interviewSprintModel: Model<InterviewSprintDocument>,
+    @InjectModel(UserJobScore.name) private readonly UserJobScoreModel: Model<UserJobScoreDocument>,
     private readonly EmailService: EmailService,
   ) {}
 
@@ -173,6 +176,21 @@ export class JobDashboardService {
       const candidateInfo = await this.getCandidateInfo(
         String(application.candidateId),
       );
+      const candidate = await this.candidateModel.findOne({_id:application.candidateId}).exec();
+      const job  = await this.jobModel.findOne({_id:application.jobId}).exec();
+      const UserJobscore = await this.UserJobScoreModel.findOne({candidateId:candidate._id, jobId:job._id}).exec();
+      const analysis  = await this.videoAiAnalysisModel.findOne({applicationId:application._id}).exec();
+      let english = 0;
+      let body = 0;
+      if(analysis){
+        for(const video of analysis.videos)
+        {
+          english+=video.audio.english_level_score;
+          body+=video.body_language.scores.overall_body_score;
+        }
+        english = (english/analysis.feedback.videos_analyzed) *100;
+        body = (body/analysis.feedback.videos_analyzed)*100;
+      }
       dashboardData.push({
         applicationId: String(application._id),
         candidate: {
@@ -184,12 +202,12 @@ export class JobDashboardService {
           applicationStatus: application.status,
         },
         match: {
-          matchScore: application.matchScore,
+          matchScore: UserJobscore?.score || 0,
         },
         indicators: {
-          cvRank: application.matchScore || 0,
-          english: 50,
-          bodyLanguage: 50,
+          cvRank: UserJobscore?.score || 0,
+          english: english,
+          bodyLanguage: body,
         },
       });
     }
@@ -233,7 +251,7 @@ export class JobDashboardService {
       application.currentStage = application.totalStages;
       application.nextStepAt = null;
       application.nextStepTitle = "Accepted";
-      await this.EmailService.sendApplicationAcceptedEmail(candidate.fullName,user.email,job.title);
+      // await this.EmailService.sendApplicationAcceptedEmail(candidate.fullName,user.email,job.title);
     }
     if (dto.applicationStatus === ApplicationStatus.INTERVIEW) {
       // application.interviewed = true;
@@ -256,19 +274,19 @@ export class JobDashboardService {
           submitted_at: null
         })
       }
-      await this.EmailService.sendInterviewInvitationEmail(
-        candidate.fullName,
-        user.email,
-        job.title,
-        job.interviewStartDate,
-        job.interviewEndDate
-      );
+      // await this.EmailService.sendInterviewInvitationEmail(
+      //   candidate.fullName,
+      //   user.email,
+      //   job.title,
+      //   job.interviewStartDate,
+      //   job.interviewEndDate
+      // );
     }
     if (dto.applicationStatus === ApplicationStatus.REJECTED) {
       if (application.status === ApplicationStatus.CV_FAILED) {
         const uniqueSkills = job.skills.filter((skill) => !candidate.skills.includes(skill));
         if(uniqueSkills.length > 0)
-          await this.EmailService.sendCvRejectionEmail(candidate.fullName, user.email, job.title, uniqueSkills);
+          // await this.EmailService.sendCvRejectionEmail(candidate.fullName, user.email, job.title, uniqueSkills);
         application.feedbackSummary = "Rejected due to CV not matching the job requirements";
       }
       // application.interviewed = true;
@@ -283,7 +301,20 @@ export class JobDashboardService {
     const candidateInfo = await this.getCandidateInfo(
       String(application.candidateId),
     );
-
+    const UserJobscore = await this.UserJobScoreModel.findOne({candidateId:candidate._id, jobId:job._id}).exec();
+    console.log(UserJobscore);
+    const analysis  = await this.videoAiAnalysisModel.findOne({applicationId:application._id}).exec();
+    let english = 0;
+    let body = 0;
+    if(analysis){
+      for(const video of analysis.videos)
+      {
+        english+=video.audio.english_level_score;
+        body+=video.body_language.scores.overall_body_score;
+      }
+      english = (english/analysis.feedback.videos_analyzed) *100;
+      body = (body/analysis.feedback.videos_analyzed)*100;
+    }
     return {
       applicationId: String(application._id),
       candidate: {
@@ -295,12 +326,12 @@ export class JobDashboardService {
         applicationStatus: application.status,
       },
       match: {
-        matchScore: application.matchScore,
+        matchScore: UserJobscore?.score || 0,
       },
       indicators: {
-        cvRank: application.matchScore,
-        english: 50,
-        bodyLanguage: 50,
+        cvRank: UserJobscore?.score || 0,
+        english: english,
+        bodyLanguage: body,
       },
     };
   }

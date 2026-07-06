@@ -214,7 +214,7 @@ export class ApplicationSumService {
         },
         ArchitecturalAlignmentSection:{
             score:aggScore,
-            summary:'',
+            summary:videosResponses?.feedback.summary || 'No summary',
             matchingSkills:jobScore?.matchedSkills || [],
         },
         CVSection:{

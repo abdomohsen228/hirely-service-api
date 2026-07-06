@@ -301,10 +301,10 @@ export class HistoricalDashboardService {
             const now = new Date();
 
             if (now >= job.interviewStartDate) {
-                const totalDuration = now.getTime() - job.interviewStartDate.getTime();;
-                hiring_progress = (totalDuration / job.sprintDuration) * 100;
+                const totalDuration = now.getTime() - job.interviewStartDate.getTime();
+                hiring_progress = (totalDuration / (job.sprintDuration*7)) * 100;
 
-                if (hiring_progress > 100) hiring_progress = 100;
+                if (hiring_progress > 100 || hiring_progress < 0) hiring_progress = 100;
 
             } else {
                 hiring_progress = 0; // Hasn't started yet

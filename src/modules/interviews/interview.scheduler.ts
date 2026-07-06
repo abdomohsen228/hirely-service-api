@@ -9,8 +9,8 @@ export class InterviewScheduler {
     private readonly interviewService: InterviewsService,
   ) {}
 
-  @Cron('0 0 * * *')
-  async closeExpiredJobs() {
+  @Cron('* * * * *')
+  async updateEvaluatedApplications() {
     await this.interviewService.updateEvaluatedApplications();
   }
 

@@ -280,6 +280,15 @@ export class InterviewsService {
     firstUnansweredIndex === -1
       ? questions.length
       : firstUnansweredIndex + 2;
+  const canStart =
+      status === CandidateInterviewStatus.INVITED &&
+      context.application.status === ApplicationStatus.INTERVIEW;
+
+    console.log({
+      status,
+      applicationStatus: context.application.status,
+      canStart,
+    });
 
   return {
     interviewId: interview?._id.toString() ?? null,
@@ -329,6 +338,8 @@ export class InterviewsService {
     const interview = await this.candidateInterviewModel
       .findOne({ applicationId: context.application._id })
       .exec();
+    console.log("get interview: ")
+    console.log(interview)
 
     return this.toSessionResponse(context, interview);
   }
@@ -360,6 +371,7 @@ export class InterviewsService {
       {_id:new Types.ObjectId(applicationId)},
       {interviewed:true}
     ).exec();
+    
 
     return this.toSessionResponse(context, interview);
   }
