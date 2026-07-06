@@ -13,7 +13,7 @@ export class AiMatchingScheduler {
   //     await this.aiMatchingService.screenApplications();
   //   }
 
-  @Cron('* * * * *')
+@Cron('*/5 * * * *')
   async processPendingVideoAnalyses() {
     this.logger.log('Running scheduled task: processPendingVideoAnalyses');
     await this.aiMatchingService.processPendingVideoAnalyses();
