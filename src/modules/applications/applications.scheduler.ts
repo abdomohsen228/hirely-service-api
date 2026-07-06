@@ -7,7 +7,7 @@ export class ApplicationsScheduler {
   private readonly logger = new Logger(ApplicationsScheduler.name);
   constructor(private readonly applicationsService: ApplicationsService) {}
 
-  @Cron('0 0 * * *')
+  @Cron('* * * * *')
   async updateApplicationStatuses() {
     this.logger.log('Running scheduled task: updateApplicationStatuses');
     await this.applicationsService.updateApplicationStatuses();
