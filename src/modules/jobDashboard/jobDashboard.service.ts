@@ -129,9 +129,10 @@ async getAverageMatchScore(jobId: string): Promise<number> {
     const applicationsWithScores = applications.map((app) => {
       const score = scoreMap.get(app.candidateId.toString());
       console.log(`[JobDashboard] Application ${app._id}, Candidate ${app.candidateId}, Score: ${score}`);
+      const matched = Math.round(score * 100) / 100
       return {
         ...app.toObject(),
-        matchScore: score || 0,
+        matchScore: matched,
       };
     });
 
