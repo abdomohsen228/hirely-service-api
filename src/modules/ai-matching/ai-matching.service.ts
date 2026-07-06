@@ -311,6 +311,7 @@ export class AiMatchingService {
   ): Promise<void> {
     const candidate = await this.candidateModel.findById(candidateId);
     if (!candidate || !candidate.user) {
+      
       this.logger.warn(
         `[video_analysis] Candidate ${candidateId} not found or has no user. Skipping.`,
       );

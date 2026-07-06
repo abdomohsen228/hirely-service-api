@@ -7,4 +7,5 @@ export enum ApplicationStatus {
   ACCEPTED = 'ACCEPTED',
   REJECTED = 'REJECTED',
   CV_FAILED = 'CV_FAILED',
+  VIDEO_FAILED = 'VIDEO_FAILED'
 }

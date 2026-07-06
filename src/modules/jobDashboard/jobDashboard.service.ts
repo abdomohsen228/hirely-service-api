@@ -81,10 +81,10 @@ export class JobDashboardService {
   }
 
   private async getAverageMatchScore(jobId: string): Promise<number> {
-    const avgMatchScore = await this.jobApplicationModel
+    const avgMatchScore = await this.UserJobScoreModel
       .aggregate([
         { $match: { jobId: new Types.ObjectId(jobId) } },
-        { $group: { _id: null, average: { $avg: '$matchScore' } } },
+        { $group: { _id: null, average: { $avg: '$score' } } },
       ])
       .exec();
     return avgMatchScore.length > 0 ? avgMatchScore[0].average : 0;
@@ -102,17 +102,40 @@ export class JobDashboardService {
     if (applicationStatus) {
       filter.status = applicationStatus;
     }
+
+    let applications = await this.jobApplicationModel.find(filter).exec();
+
+    // Get UserJobScore records for all applications
+    const candidateIds = applications.map((app) => app.candidateId);
+    const jobScores = await this.UserJobScoreModel
+      .find({ jobId: new Types.ObjectId(jobId), candidateId: { $in: candidateIds } })
+      .exec();
+
+    const scoreMap = new Map(
+      jobScores.map((score) => [score.candidateId.toString(), score.score]),
+    );
+
+    // Attach scores to applications
+    const applicationsWithScores = applications.map((app) => ({
+      ...app.toObject(),
+      matchScore: scoreMap.get(app.candidateId.toString()) || 0,
+    }));
+
+    // Filter by matchScore if provided
+    let filteredApplications = applicationsWithScores;
     if (matchScore !== undefined) {
-      filter.matchScore = { $gte: matchScore };
+      filteredApplications = applicationsWithScores.filter(
+        (app) => app.matchScore >= matchScore,
+      );
     }
 
-    let query = this.jobApplicationModel.find(filter).skip(skip).limit(limit);
-
+    // Sort by matchScore if filter is provided
     if (matchScore !== undefined) {
-      query = query.sort({ matchScore: -1 });
+      filteredApplications.sort((a, b) => b.matchScore - a.matchScore);
     }
 
-    return query.exec();
+    // Apply pagination
+    return filteredApplications.slice(skip, skip + limit);
   }
 
   private async getFilteredApplicationsCount(
@@ -124,10 +147,33 @@ export class JobDashboardService {
     if (applicationStatus) {
       filter.status = applicationStatus;
     }
+
+    let applications = await this.jobApplicationModel.find(filter).exec();
+
+    // Get UserJobScore records for all applications
+    const candidateIds = applications.map((app) => app.candidateId);
+    const jobScores = await this.UserJobScoreModel
+      .find({ jobId: new Types.ObjectId(jobId), candidateId: { $in: candidateIds } })
+      .exec();
+
+    const scoreMap = new Map(
+      jobScores.map((score) => [score.candidateId.toString(), score.score]),
+    );
+
+    // Attach scores to applications
+    const applicationsWithScores = applications.map((app) => ({
+      ...app.toObject(),
+      matchScore: scoreMap.get(app.candidateId.toString()) || 0,
+    }));
+
+    // Filter by matchScore if provided
     if (matchScore !== undefined) {
-      filter.matchScore = { $gte: matchScore };
+      return applicationsWithScores.filter(
+        (app) => app.matchScore >= matchScore,
+      ).length;
     }
-    return this.jobApplicationModel.countDocuments(filter).exec();
+
+    return applicationsWithScores.length;
   }
 
   private async getCandidateInfo(candidateId: string) {
