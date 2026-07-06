@@ -80,6 +80,8 @@ export class InterviewSumService {
     console.log('canidateInterview');
     if(!candidateInterview)
         throw new BadRequestException('Candidate interview not found for this application');
+    if(candidateInterview.status != CandidateInterviewStatus.EVALUATED)
+        throw new BadRequestException('Interview evaluation is not ready yet')
     const interviewResponse = await this.interviewResponseModel.findOne({ candidateInterviewId: candidateInterview._id });
         console.log('interviewRes');
     const interviewQuestions = await this.interviewQuestionModel.find({ jobId: application.jobId});

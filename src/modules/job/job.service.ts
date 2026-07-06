@@ -665,7 +665,8 @@ export class JobService {
       );
     }
     const score = await this.userJobScoreModel.findOne({candidateId:candidate._id, jobId:job._id}).exec();
-    console.log(`Match score for job: ${job.title} and candidate: ${candidate.fullName} is ${score.score}`)
+    
+    // console.log(`Match score for job: ${job.title} and candidate: ${candidate.fullName} is ${score.score}`)
 
     const application = await this.jobApplicationModel.create({
       candidateId: candidate._id,
