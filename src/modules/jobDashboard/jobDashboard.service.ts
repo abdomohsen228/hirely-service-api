@@ -111,15 +111,21 @@ export class JobDashboardService {
       .find({ jobId: new Types.ObjectId(jobId), candidateId: { $in: candidateIds } })
       .exec();
 
+    console.log(`[JobDashboard] Found ${jobScores.length} UserJobScore records for ${candidateIds.length} candidates`);
+
     const scoreMap = new Map(
       jobScores.map((score) => [score.candidateId.toString(), score.score]),
     );
 
     // Attach scores to applications
-    const applicationsWithScores = applications.map((app) => ({
-      ...app.toObject(),
-      matchScore: scoreMap.get(app.candidateId.toString()) || 0,
-    }));
+    const applicationsWithScores = applications.map((app) => {
+      const score = scoreMap.get(app.candidateId.toString());
+      console.log(`[JobDashboard] Application ${app._id}, Candidate ${app.candidateId}, Score: ${score}`);
+      return {
+        ...app.toObject(),
+        matchScore: score || 0,
+      };
+    });
 
     // Filter by matchScore if provided
     let filteredApplications = applicationsWithScores;
@@ -222,9 +228,6 @@ export class JobDashboardService {
       const candidateInfo = await this.getCandidateInfo(
         String(application.candidateId),
       );
-      const candidate = await this.candidateModel.findOne({_id:application.candidateId}).exec();
-      const job  = await this.jobModel.findOne({_id:application.jobId}).exec();
-      const UserJobscore = await this.UserJobScoreModel.findOne({candidateId:candidate._id, jobId:job._id}).exec();
       const analysis  = await this.videoAiAnalysisModel.findOne({applicationId:application._id}).exec();
       let english = 0;
       let body = 0;
@@ -248,10 +251,10 @@ export class JobDashboardService {
           applicationStatus: application.status,
         },
         match: {
-          matchScore: UserJobscore?.score || 0,
+          matchScore: application.matchScore || 0,
         },
         indicators: {
-          cvRank: UserJobscore?.score || 0,
+          cvRank: application.matchScore || 0,
           english: english,
           bodyLanguage: body,
         },

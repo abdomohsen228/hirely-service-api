@@ -206,16 +206,27 @@ export class ApplicationsService {
         this.uploadService.getCvUrlByKey(application.resumeUrl),
       ),
     );
-    const scores = await Promise.all(
-      applications.map((application) =>
-        this.userJobScoreModel.findOne({jobId:application.jobId, candidateId:application.candidateId}),
-      ),
+
+    // Fetch all UserJobScore records in one query
+    const candidateIds = applications.map((app) => app.candidateId);
+    const jobIds = applications.map((app) => app.jobId);
+    const scores = await this.userJobScoreModel
+      .find({
+        candidateId: { $in: candidateIds },
+        jobId: { $in: jobIds },
+      })
+      .exec();
+
+    // Create a map for quick lookup
+    const scoreMap = new Map(
+      scores.map((score) => [`${score.candidateId.toString()}_${score.jobId.toString()}`, score]),
     );
+
     const items: MyJobApplicationItemResponseDto[] = await Promise.all(
-    applications.map(async (application, index) => {
+    applications.map(async (application) => {
       const matchedJob = jobsById.get(application.jobId.toString());
-      const cv = cvUrls[index];
-      const score = scores[index];
+      const cv = await this.uploadService.getCvUrlByKey(application.resumeUrl);
+      const score = scoreMap.get(`${application.candidateId.toString()}_${application.jobId.toString()}`);
 
       return {
         application: score

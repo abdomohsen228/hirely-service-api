@@ -188,9 +188,9 @@ export class AiMatchingService {
         `[${context.trigger}] Saved UserJobScore | candidateId=${candidateId.toString()} | jobId=${recommendation.job_id} | score=${recommendation.match_score}`,
       );
 
-      // Send email if score > 0.9 and trigger is from job creation
+      // Send email if score > 0.8 and trigger is from job creation
       if (
-        recommendation.match_score > 0.9 &&
+        recommendation.match_score > 0.8 &&
         context.trigger === 'create_job'
       ) {
         await this.sendMatchingEmailIfScoreHigh(
