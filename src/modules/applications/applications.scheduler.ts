@@ -7,11 +7,11 @@ export class ApplicationsScheduler {
   private readonly logger = new Logger(ApplicationsScheduler.name);
   constructor(private readonly applicationsService: ApplicationsService) {}
 
-  // @Cron('0 0 * * *')
-  // async updateApplicationStatuses() {
-  //   this.logger.log('Running scheduled task: updateApplicationStatuses');
-  //   await this.applicationsService.updateApplicationStatuses();
-  // }
+  @Cron('0 0 * * *')
+  async updateApplicationStatuses() {
+    this.logger.log('Running scheduled task: updateApplicationStatuses');
+    await this.applicationsService.updateApplicationStatuses();
+  }
 
   // @Cron('* * * * *')
   // async moveApplicationsTointerview() {

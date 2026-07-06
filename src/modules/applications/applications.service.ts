@@ -211,43 +211,20 @@ export class ApplicationsService {
         this.userJobScoreModel.findOne({jobId:application.jobId, candidateId:application.candidateId}),
       ),
     );
-    const items: MyJobApplicationItemResponseDto[] = applications.map(
-      (application) => {
-        const matchedJob = jobsById.get(application.jobId.toString());
-        const cv = cvUrls[applications.indexOf(application)];
-        const score = scores[applications.indexOf(application)];
-        return {
-          application:score ? this.toApplicationResponse(application,cv,score.score) : this.toApplicationResponse(application,cv),
-          job: matchedJob ? this.toResponse(matchedJob) : null,
-            // id: doc._id.toString(),
-            // title: doc.title,
-            // department: doc.department,
-            // jobType: doc.jobType,
-            // location: doc.location,
-            // experienceLevel: doc.experienceLevel,
-            // roleContext: doc.roleContext,
-            // coreResponsibilities: doc.coreResponsibilities,
-            // companySummary: hrProfile?.companySummary ?? null,
-            // companySize: hrProfile?.companySize ?? null,
-            // hrName: hrProfile?.fullName ?? null,
-            // skills: doc.skills ?? [],
-            // keywords: doc.keywords ?? [],
-            // isCandidateApply: isCandidateApply ?? false,
-            // interviewerQuestions: questions,
-            // documentAttachment: doc.documentAttachment,
-            // companyName: doc.companyName,
-            // createdBy: doc.createdBy.toString(),
-            // status: doc.status,
-            // startDate: doc.startDate,
-            // endDate: doc.endDate,
-            // workplaceType: doc.workplaceType,
-            // sprintDuration: doc.sprintDuration,
-            // applicationCount: doc.applicationCount,
-            // createdAt: doc.get('createdAt'),
-            // updatedAt: doc.get('updatedAt'),
-        };
-      },
-    );
+    const items: MyJobApplicationItemResponseDto[] = await Promise.all(
+    applications.map(async (application, index) => {
+      const matchedJob = jobsById.get(application.jobId.toString());
+      const cv = cvUrls[index];
+      const score = scores[index];
+
+      return {
+        application: score
+          ? this.toApplicationResponse(application, cv, score.score)
+          : this.toApplicationResponse(application, cv),
+        job: matchedJob ? await this.toResponse(matchedJob) : null,
+      };
+    }),
+  );
 
     return {
       items,
@@ -277,18 +254,21 @@ export class ApplicationsService {
     const score = await this.userJobScoreModel.findOne({candidateId:candidate._id, jobId:job._id}).exec();
     return {
       application: score ? this.toApplicationResponse(application,cv,score.score) : this.toApplicationResponse(application,cv),
-      job: job ? this.toResponse(job) : null,
+      job: job ? await this.toResponse(job) : null,
     };
   }
 
-  private toResponse(
+  private async toResponse(
     doc: JobDocument,
     hrProfile?: HrDocument | null,
     isCandidateApply?: boolean,
-  ): JobPostResponseDto {
+  ): Promise<JobPostResponseDto> {
     let questions: string[] = [];
     if (doc.interviewerQuestions && doc.interviewerQuestions.length > 0) {
       questions = doc.interviewerQuestions.map((q) => q.toString());
+    }
+    if(!hrProfile){
+      hrProfile = await this.hrModel.findOne({_id:doc.hr}).exec();
     }
     return {
       id: doc._id.toString(),
