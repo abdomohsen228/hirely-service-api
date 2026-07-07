@@ -323,6 +323,14 @@ export class JobService {
       );
       interviewQuestionIds.push(...createdQuestionIds);
     }
+  const interviewStartDate = new Date(
+    dto.endDate.getTime() + 24 * 60 * 60 * 1000,
+);
+
+const interviewEndDate = new Date(
+  interviewStartDate.getTime() +
+  dto.sprintDuration * 7 * 24 * 60 * 60 * 1000,
+);
     const created = await this.jobModel.create({
       title: dto.title,
       department: dto.department,
@@ -342,12 +350,8 @@ export class JobService {
       endDate: dto.endDate,
       sprintDuration: dto.sprintDuration,
       workplaceType: dto.workplaceType,
-      interviewStartDate: new Date(
-        dto.endDate.getTime() + 2 * 24 * 60 * 60 * 1000,
-      ),
-      interviewEndDate: new Date(
-        dto.startDate.getTime() + dto.sprintDuration * 24 * 60 * 60 * 1000,
-      ),
+      interviewStartDate,
+      interviewEndDate,
     });
 
     // After job creation, update the interview questions with the jobId
