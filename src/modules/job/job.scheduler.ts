@@ -2,13 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { JobService } from './job.service';
 
-
 @Injectable()
 export class JobScheduler {
   private readonly logger = new Logger(JobScheduler.name);
-  constructor(
-    private readonly jobService: JobService,
-  ) {}
+  constructor(private readonly jobService: JobService) {}
 
   @Cron('* * * * *')
   async closeExpiredJobs() {
